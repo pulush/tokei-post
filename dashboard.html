@@ -201,9 +201,9 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 
 <nav>
   <button class="tab active" onclick="switchTab('post')">投稿</button>
+  <button class="tab" onclick="switchTab('learn')">📚 学習</button>
   <button class="tab" onclick="switchTab('dashboard')">ダッシュボード</button>
   <button class="tab" onclick="switchTab('history')">履歴</button>
-  <button class="tab" onclick="switchTab('watches')">時計データ</button>
   <button class="tab" onclick="switchTab('settings')">設定</button>
 </nav>
 
@@ -233,10 +233,92 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
       </div>
     </div>
 
+    <!-- 画像添付エリア -->
+    <div id="imageArea" style="margin-bottom:12px">
+      <div style="font-size:10px;letter-spacing:.15em;color:var(--dim);margin-bottom:7px">📎 画像添付（任意）</div>
+      <label id="imageLabel" style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--black-3);border:1px dashed var(--border-h);border-radius:3px;cursor:pointer;transition:border-color .2s">
+        <span style="font-size:18px">🖼</span>
+        <div>
+          <div style="font-size:12px;color:var(--white)">タップして画像を選択</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:2px">JPG / PNG / GIF / WEBP — 5MB以下</div>
+        </div>
+        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="onImageSelect(this)">
+      </label>
+      <!-- プレビュー＋黒帯ドラッグ -->
+      <div id="imagePreview" style="display:none;margin-top:8px">
+
+        <!-- ヘルプテキスト -->
+        <div id="maskHelp" style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">
+          📌 黒帯をドラッグで移動、下端をドラッグで縦幅変更できます
+        </div>
+
+        <!-- 画像＋黒帯オーバーレイ -->
+        <div id="imgWrap" style="position:relative;border-radius:3px;overflow:hidden;border:1px solid var(--border);touch-action:none">
+          <img id="previewImg" style="width:100%;display:block;user-select:none;-webkit-user-drag:none">
+
+          <!-- 黒帯オーバーレイ -->
+          <div id="maskBand" style="display:none;position:absolute;left:0;width:100%;background:rgba(0,0,0,0.85);pointer-events:none;box-sizing:border-box;border-top:2px solid #c9a84c;border-bottom:2px solid #c9a84c">
+            <div style="text-align:center;padding:3px 0;font-size:9px;color:#555">■ 黒塗り範囲</div>
+          </div>
+
+          <!-- 削除ボタン -->
+          <button onclick="removeImage()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.75);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;z-index:20">✕</button>
+        </div>
+
+        <!-- 黒帯コントロール -->
+        <div style="margin-top:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
+            <input type="checkbox" id="maskEnabled" style="accent-color:#c9a84c;width:15px;height:15px;flex-shrink:0" onchange="toggleMaskBand(this.checked)">
+            <span style="font-size:11px;color:var(--dim)">🖊 黒帯で隠す</span>
+          </label>
+          <div id="maskControls" style="display:none;padding:10px 12px;background:var(--black-3);border:1px solid var(--border);border-radius:3px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="font-size:10px;color:#aaa;width:36px;flex-shrink:0">位置</span>
+              <input type="range" id="sliderPos" min="0" max="85" value="30" step="1"
+                style="flex:1;accent-color:#c9a84c" oninput="onMaskSlider()">
+              <span id="sliderPosVal" style="font-size:10px;color:var(--gold);width:30px;text-align:right;flex-shrink:0">30%</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:10px;color:#aaa;width:36px;flex-shrink:0">縦幅</span>
+              <input type="range" id="sliderH" min="5" max="60" value="15" step="1"
+                style="flex:1;accent-color:#c9a84c" oninput="onMaskSlider()">
+              <span id="sliderHVal" style="font-size:10px;color:var(--gold);width:30px;text-align:right;flex-shrink:0">15%</span>
+            </div>
+            <div id="maskInfoText" style="font-size:10px;color:#aaa;margin-bottom:10px;text-align:center"></div>
+            <button onclick="confirmMask()" style="width:100%;padding:9px;background:#c9a84c;color:#000;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer">✅ この黒塗りで確定</button>
+          </div>
+          <div id="maskConfirmed" style="display:none;margin-top:5px;font-size:11px;color:var(--gold);padding:5px 8px;background:rgba(201,168,76,.1);border-radius:3px">
+            ✅ <span id="maskConfirmedText"></span>　← AI生成時に除外されます
+          </div>
+        </div>
+
+        <div id="uploadStatus" style="margin-top:5px;font-size:10px;color:var(--dim)"></div>
+      </div>
+      <!-- 画像から文章生成モード -->
+      <div id="imgAnalyzeArea" style="display:none;margin-top:10px;padding:13px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.35);border-radius:3px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:11px">
+          <input type="checkbox" id="imgAnalyzeMode" style="accent-color:#7c3aed;width:15px;height:15px" onchange="document.getElementById('buyPriceRow').style.display=this.checked?'block':'none'">
+          <div>
+            <div style="font-size:12px;color:#c4b5fd;font-weight:600">📷 この画像から投稿文を生成する</div>
+            <div style="font-size:10px;color:var(--dim);margin-top:2px">メルカリ・ヤフオクのスクショを読み取って自動で文章を考えます</div>
+          </div>
+        </label>
+        <div id="buyPriceRow" style="display:none">
+          <div style="font-size:10px;color:#c4b5fd;margin-bottom:5px;letter-spacing:.1em">💰 仕入れ額（円）</div>
+          <input type="number" id="buyPriceInput" placeholder="例: 15000"
+            style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(124,58,237,.5);color:var(--white);padding:9px 12px;border-radius:3px;font-size:14px;outline:none;font-family:var(--font-m)">
+          <div style="font-size:10px;color:var(--dim);margin-top:4px">手数料（メルカリ10%＋送料200円）は自動で差し引きます</div>
+        </div>
+      </div>
+    </div>
+
     <!-- アクションバー -->
     <div class="post-action">
       <button class="btn btn-outline" onclick="generateThread()" id="genBtn">
-        ↻ 生成
+        ↻ テンプレ生成
+      </button>
+      <button class="btn" onclick="generateAI()" id="aiBtn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:9px 14px;border-radius:3px;font-size:11px;letter-spacing:.1em;cursor:pointer">
+        ✨ AI生成
       </button>
       <button class="btn btn-post" onclick="confirmPost()" id="postBtn" disabled>
         X に投稿する
@@ -300,17 +382,62 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
   </div>
 </div>
 
-<!-- ══ 時計データ ══ -->
-<div class="section" id="tab-watches">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <div style="font-family:var(--font-d);font-size:14px;letter-spacing:.2em;color:var(--dim)">時計データ</div>
-    <button class="btn btn-gold btn-sm" onclick="openAddWatch()">＋ 追加</button>
+<!-- ══ 学習データ ══ -->
+<div class="section" id="tab-learn">
+
+  <div class="card">
+    <div class="card-title">📚 参考文章を学習させる</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:14px;line-height:1.6">
+      参考アカウントの投稿をコピペして登録してください。<br>
+      「✨ AI生成」ボタンを押すと、登録した文体を学習して<br>毎回新しい投稿文を自動で考えます。
+    </div>
+
+    <!-- 追加フォーム -->
+    <div style="margin-bottom:14px">
+      <input id="sampleLabel" placeholder="ラベル（例：相場投稿・教育系）"
+        style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid var(--border);color:var(--white);padding:9px 12px;border-radius:3px;font-size:12px;margin-bottom:8px;outline:none">
+      <textarea id="sampleText" rows="7" placeholder="参考にしたい投稿をここにコピペしてください&#10;&#10;複数の投稿をまとめて貼ってもOKです😊"
+        style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid var(--border);color:var(--white);padding:9px 12px;border-radius:3px;font-size:12px;resize:vertical;outline:none;font-family:inherit"></textarea>
+      <button onclick="addSample()" class="btn btn-post" style="width:100%;margin-top:8px">
+        ＋ 登録する
+      </button>
+    </div>
+
+    <!-- 登録済み一覧 -->
+    <div style="font-size:10px;letter-spacing:.15em;color:var(--dim);margin-bottom:10px">登録済み参考文章</div>
+    <div id="sampleList">
+      <div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">
+        まだ登録されていません
+      </div>
+    </div>
   </div>
-  <div id="watchList"></div>
+
+  <div class="card">
+    <div class="card-title">✨ AI生成について</div>
+    <div style="font-size:11px;color:var(--dim);line-height:1.8">
+      <div>📌 参考文章を3〜5件登録すると精度が上がります</div>
+      <div>📌 参考文章が0件の場合はテンプレートで生成します</div>
+      <div>📌 AI生成はClaude APIを使用します（1回約1〜2円）</div>
+      <div>📌 毎回異なる内容が生成されます</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══ 設定 ══ -->
 <div class="section" id="tab-settings">
+
+  <div class="card" style="border-color:rgba(66,133,244,.4)">
+    <div class="card-title" style="color:#4285f4">✨ AI生成キー（Gemini・無料）</div>
+    <p style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.6">
+      無料で使えます。<a href="https://aistudio.google.com/apikey" target="_blank" style="color:#4285f4">aistudio.google.com/apikey</a> で取得してください。
+    </p>
+    <input type="password" id="anthropicKeyInput"
+      placeholder="AIza..."
+      style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(66,133,244,.4);color:var(--white);padding:10px 12px;border-radius:3px;font-size:13px;margin-bottom:8px;font-family:monospace"
+      oninput="saveApiKey(this.value)">
+    <div id="apiKeyStatus" style="font-size:10px;color:var(--dim)">未入力</div>
+  </div>
 
   <div class="card">
     <div class="card-title">投稿コントロール</div>
@@ -409,6 +536,10 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
     <p style="font-size:11px;color:var(--dim);margin-bottom:14px">
       このスレッドを @chirutta として投稿します。<br>投稿後は取り消せません。
     </p>
+    <div id="confirmImagePreview" style="display:none;margin-bottom:10px">
+      <img id="confirmImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--gold);margin-top:4px;font-family:var(--font-m)">📎 画像1枚添付</div>
+    </div>
     <div id="confirmThreadPreview" style="margin-bottom:16px"></div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-outline" style="flex:1" onclick="closeModal('modalConfirm')">キャンセル</button>
@@ -421,9 +552,118 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 
 <script>
 // ════════════════════════════
+// IMAGE STATE
+// ════════════════════════════
+const imgState = {
+  file: null,
+  mediaId: null,
+  uploaded: false,
+};
+
+function onImageSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('5MB以下の画像を選んでください'); return; }
+
+  imgState.file = file;
+  imgState.mediaId = null;
+  imgState.uploaded = false;
+
+  // プレビュー表示
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataURL = e.target.result;
+    imgState.dataURL = dataURL;
+
+    const imgEl = document.getElementById('previewImg');
+    imgEl.src = dataURL;
+    document.getElementById('imagePreview').style.display = 'block';
+    document.getElementById('uploadStatus').textContent = '';
+    document.getElementById('imgAnalyzeArea').style.display = 'block';
+    // スライダーリセット
+    // 黒帯リセット
+    ['maskEnabled'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+    ['maskBand','maskControls','maskConfirmed'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    imgState.maskTop = 0;
+    imgState.maskBot = 0;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  imgState.file = null;
+  imgState.mediaId = null;
+  imgState.uploaded = false;
+  imgState.dataURL = null;
+  imgState.maskTop = 0;
+  imgState.maskBot = 0;
+  ['maskEnabled'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
+  ['maskBand','maskControls','maskConfirmed'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+  document.getElementById('imageInput').value = '';
+  document.getElementById('imagePreview').style.display = 'none';
+  document.getElementById('imgAnalyzeArea').style.display = 'none';
+  document.getElementById('imgAnalyzeMode').checked = false;
+  if(document.getElementById('buyPriceInput')) document.getElementById('buyPriceInput').value = '';
+  if(document.getElementById('buyPriceRow')) document.getElementById('buyPriceRow').style.display = 'none';
+  const overlay = document.getElementById('maskOverlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
+async function uploadImageIfNeeded() {
+  if (!imgState.file || imgState.uploaded) return;
+  const statusEl = document.getElementById('uploadStatus');
+  statusEl.textContent = '⏫ X にアップロード中...';
+
+  const formData = new FormData();
+  formData.append('image', imgState.file);
+
+  try {
+    const res = await fetch(API_BASE + '/upload_image', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.media_id) {
+      imgState.mediaId = data.media_id;
+      imgState.uploaded = true;
+      statusEl.textContent = data.dry_run ? '🧪 DRY RUN — アップロードスキップ' : '✅ アップロード完了';
+      statusEl.style.color = 'var(--green)';
+    } else {
+      statusEl.textContent = '❌ ' + (data.error || 'アップロード失敗');
+      statusEl.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    statusEl.textContent = '❌ サーバーに接続できません';
+    statusEl.style.color = 'var(--red)';
+  }
+}
+
+// ════════════════════════════
 // CONFIG
 // ════════════════════════════
-const API_BASE = "http://localhost:5000/api";
+// Renderデプロイ時は自動でそのURLを使う、ローカルはlocalhost
+const API_BASE = (location.protocol === 'file:' || location.hostname === 'localhost')
+  ? "http://localhost:5000/api"
+  : location.origin + "/api";
+
+// AnthropicキーをlocalStorageに保存・読み込み
+function saveApiKey(val) {
+  val = val.trim();
+  try { localStorage.setItem('anthropic_key', val); } catch(e) {}
+  const el = document.getElementById('apiKeyStatus');
+  if (!el) return;
+  if (val.startsWith('AIza') && val.length > 20) {
+    el.textContent = '✅ 有効なGeminiキーです';
+    el.style.color = 'var(--green)';
+  } else if (val.length > 0) {
+    el.textContent = '⚠ AIza で始まるキーを入力してください';
+    el.style.color = 'var(--red)';
+  } else {
+    el.textContent = '未入力';
+    el.style.color = 'var(--dim)';
+  }
+}
+
+function getApiKey() {
+  try { return localStorage.getItem('anthropic_key') || ''; } catch(e) { return ''; }
+}
 
 const state = {
   selectedType: "random",
@@ -446,14 +686,19 @@ const state = {
 // TAB
 // ════════════════════════════
 function switchTab(id) {
-  document.querySelectorAll(".tab").forEach((t,i)=>{
-    t.classList.toggle("active", ["post","dashboard","history","watches","settings"][i]===id);
+  // タブボタンのアクティブ状態
+  document.querySelectorAll(".tab").forEach(t => {
+    const tabId = t.getAttribute("onclick").match(/'(\w+)'/)[1];
+    t.classList.toggle("active", tabId === id);
   });
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById("tab-"+id).classList.add("active");
-  if(id==="history") loadHistory();
-  if(id==="watches") loadWatches();
-  if(id==="dashboard") updateDashboard();
+  // タブコンテンツの表示切り替え
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const target = document.getElementById("tab-" + id);
+  if (target) target.classList.add("active");
+  // タブ別の初期化処理
+  if (id === "history")   loadHistory();
+  if (id === "dashboard") updateDashboard();
+  if (id === "learn")     loadSamples();
 }
 
 // ════════════════════════════
@@ -506,23 +751,9 @@ function setType(t) {
   active.style.border = "1px solid var(--gold-d)";
 }
 
-async function generateThread() {
-  const btn = document.getElementById("genBtn");
-  btn.textContent = "生成中...";
-  btn.disabled = true;
-
-  const data = await apiFetch(`/generate?type=${state.selectedType}`);
-
-  btn.textContent = "↻ 生成";
-  btn.disabled = false;
-
-  if(!data) {
-    // サーバー未接続 → ローカル生成（デモ用）
-    state.currentThread = localGenerate(state.selectedType);
-  } else {
-    state.currentThread = data;
-  }
-
+function generateThread() {
+  // 常にローカルのテンプレートから生成（サーバー不要）
+  state.currentThread = localGenerate(state.selectedType);
   renderThreadPreview(state.currentThread.tweets, state.currentThread.type);
   document.getElementById("postBtn").disabled = false;
 }
@@ -558,13 +789,27 @@ function escHtml(s) {
 // ════════════════════════════
 // POST FLOW
 // ════════════════════════════
-function confirmPost() {
+async function confirmPost() {
   if(!state.currentThread) return;
+
+  // 画像がある場合は先にアップロード
+  if(imgState.file && !imgState.uploaded) {
+    await uploadImageIfNeeded();
+    if(!imgState.uploaded) { showToast('画像のアップロードに失敗しました'); return; }
+  }
+
   // 確認モーダルにプレビューをセット
-  const tweets = state.currentThread.tweets;
-  const type = state.currentThread.type;
   document.getElementById("confirmThreadPreview").innerHTML =
     document.getElementById("threadPreview").innerHTML;
+
+  // 画像プレビューをモーダルにも表示
+  if(imgState.file) {
+    document.getElementById('confirmImg').src = document.getElementById('previewImg').src;
+    document.getElementById('confirmImagePreview').style.display = 'block';
+  } else {
+    document.getElementById('confirmImagePreview').style.display = 'none';
+  }
+
   document.getElementById("modalConfirm").classList.add("open");
 }
 
@@ -575,12 +820,14 @@ async function executePost() {
   btn.classList.add("posting");
   btn.disabled = true;
 
+  const postBody = {
+    tweets: state.currentThread.tweets,
+    type: state.currentThread.type,
+    media_ids: imgState.mediaId ? [imgState.mediaId] : [],
+  };
   const data = await apiFetch("/post", {
     method: "POST",
-    body: JSON.stringify({
-      tweets: state.currentThread.tweets,
-      type: state.currentThread.type,
-    })
+    body: JSON.stringify(postBody)
   });
 
   btn.textContent = "投稿する";
@@ -598,6 +845,7 @@ async function executePost() {
       status: "success",
     });
     // プレビューをリセット
+    removeImage();
     state.currentThread = null;
     document.getElementById("threadPreview").innerHTML =
       '<div style="text-align:center;padding:32px;color:var(--dim);font-size:12px">投稿完了 — 次のスレッドを生成してください</div>';
@@ -617,23 +865,7 @@ function updateDryRunBadge() {
 // ════════════════════════════
 // LOCAL FALLBACK (API未接続時)
 // ════════════════════════════
-const LOCAL_THREADS = {
-  arbitrage: [
-    ["副業で月64,200円を作る方法\n\n難しいことは何もない\n\nSEIKO ソーラー電波を\n1本売るだけで 6,420円\n\nそれを月10本やるだけ",
-     "実際の数字を見てほしい\n\nSEIKO 7B24-0AW0\n\nヤフオク　18,000円\nメルカリ　27,800円\n\n手残り　6,420円\n\n電波ソーラーは回転が速い。",
-     "月10本 → 64,200円\n月20本 → 128,400円\n\n「そんなに売れるの」と思うかもしれない\n\n1日1本以下のペースで\n月20本は達成できる\n\n仕組み化してないだけで\n難しくはない\n\n#時計物販 #副業"],
-  ],
-  education: [
-    ["副業を始めるなら時計物販を勧める理由\n\n5つある",
-     "小型で軽い\n→ 送料が安い（600〜800円）\n\nブランドで相場が読める\n→ SEIKOならSEIKOの相場がある\n\nヤフオク×メルカリの価格差が大きい\n→ 同じ商品でも5,000〜15,000円の差がざら\n\n需要が安定している\n→ 時計は流行り廃りが少ない\n\n初期資金が少なくて済む\n→ 1万円から始められる",
-     "5つ全部が揃っている副業ジャンルは少ない\n\n再現性が飛び抜けて高い\n\n「何から始めるか」で迷っているなら\n時計から入ることを強くすすめる\n\n#時計物販 #副業"],
-  ],
-  question: [
-    ["これ仕入れますか？\n\nSEIKO 電波ソーラー\nヤフオク 18,000円\n\n答えを決めてから次を読んでください",
-     "メルカリの直近30日の売れ実績\n\n27,000〜29,000円\n平均22日で売れている\n\n手残りは約6,000〜7,000円\n投資対効果は約35〜40%\n\n仕入れる理由が見えましたか？",
-     "仕入れないと答えた人へ\n\n理由は何でしたか？\n\n相場を知らなかった\n計算の仕方がわからなかった\nなんとなく不安だった\n\nコメントで教えてください\n\n#時計物販 #副業"],
-  ],
-};
+const LOCAL_THREADS = {arbitrage:[["時計転売で\nぶっ壊れてる時計の相場を\n最速で調べる方法、教えますね😊\n\n不動品だからってリサーチしない人、\nめちゃくちゃ多いんですよね😅\n\nこれ、すごくもったいないです。","時計を検品して動かなかった場合は\n\nヤフオクで相場検索してみてください。\n\nブランド＋型番＋「不動品」「ジャンク」\n\nこのワードで検索するだけです。\n\n例えばこんな感じ👇\n\nSEIKO 型番 不動品\nSEIKO 型番 ジャンク\n\nこれだけで\nジャンク時計の相場が一発で出てきます😳\n\nそしてここがポイント🔑\n\n0円だと思ってた時計が\n5,000円とか\n20,000円以上で売れてるんです。\n\nなぜ売れるのか？\n\n・コレクターの方\n・修理前提の方\n・業者さん\n\nこの方たちがガンガン落札してくれます👏","不動＝価値ゼロ\nこの考えは今日で捨ててください😌\n\nまずヤフオクで相場確認。\n\nこれを徹底するだけで\n利益の取りこぼしがかなり減りますよ👍\n\n今後もこの裏アカで\n時計転売の有益情報を出していくので\n通知オンしておいて👍\n\nP.S.\n時計転売に特化した\n有益情報をこのアカウントで\n定期的に発信しています。\nフォローしておいてください😊\n\n#時計物販 #副業 #転売"],["時計転売で\n月10万円を超えた時に\n変えたことをシェアします😊\n\n本数を増やしたわけじゃないんです。\n\n1本あたりの単価を上げただけ。\n\nこれだけで収入が3倍になりました🙌\n\n最初は正直、怖かったです😅\n\n「売れなかったら損が大きい…」\n\nそう思ってなかなか動けなかった。","でも実際にやってみると\n\n高単価の方がライバルが少なくて\nむしろ売りやすかったんですよね😳\n\n具体的に何をしたかというと\n\n仕入れ単価を\n5,000円帯 → 20,000円帯に上げました。\n\nここがポイント🔑\n\n安い時計はみんな仕入れようとします。\n高い時計は「怖い」と思って\n手を出さない人が多い。\n\nそこに差益があります。\n\n月3万円から月10万円に上げたい方へ。\n\n本数を増やすのは\n作業量が増えるだけです。\n\n単価を上げる方が\n同じ時間で3〜5倍稼げます😊","まずは1本だけ\nいつもより高い商品を仕入れてみてください。\n\nそれが変わるきっかけになると思います👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「高単価が怖い」という方に向けて\n次の投稿でリスク管理の方法を解説します。\n\n#時計物販 #副業 #物販"],["時計転売を\n資金3万円で始める方法を\n具体的に解説しますね😊\n\n「元手が少ないから無理…」\n\nその考え、今日で捨ててください🙌\n\n実は3万円あれば\n十分に始められるんです。\n\nしかも最初の月から\n黒字にすることができます。\n\n順番に説明しますね👇","資金3万円での動き方はこれです。\n\nステップ①\n1万円の商品を3本仕入れる\n\nステップ②\n1本あたり4,000〜5,000円の利益を出す\n\nステップ③\n利益を次の仕入れに回す\n\n3ヶ月後には\n仕入れ資金が倍近くになってます😳\n\nここがポイント🔑\n\n最初は回転数より利益率を重視すること。\n\n仕入れ1万円で手残り5,000円\n＝ 投資対効果50%\n\n銀行に預けても0.001%しか増えません笑\n\n同じお金の使い方じゃないんですよね。\n\n半年後には\n自分のお金をほぼ使わずに\n回せる状態になれます🙌","小さく始めて確実に回す。\n\nそれが最速で月10万に近づく方法です。\n\nまずは1万円だけ使って\n1本仕入れてみてください😊\n\n応援してます👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「最初の1本で何を仕入れるか」については\n次の投稿で具体的に解説します。\n\n#時計物販 #副業 #物販"],["時計転売で\nヤフオクの「終了時間」だけで\n仕入れ値が5,000〜10,000円変わる話をします🤔\n\n同じ時計でも終了時間が違うだけで\nこれだけの差が生まれるんです😳\n\n知ってる人と知らない人で\n仕入れコストが全然違ってくる。\n\nちょっと聞いていってください😊","ヤフオクで安く落とせる時間帯があります。\n\n夜22時〜24時に終了する商品です。\n\nこれが狙い目です👀\n\n理由はシンプルで\n\n・競り参加者が少ない\n・眠くてスマホを置いてる人が多い\n・急いで入札チェックする人が減る\n\nだから競合が減って\n安く落とせるんですよね😊\n\n実際に同じ商品を\n昼12時終了と夜23時終了で比べると\n\n夜の方が明らかに安く落とせることが多いです。\n\nここがポイント🔑\n\n検索条件で終了時間を夜に絞るだけ。\nそれだけで仕入れ値が変わります。\n\nもう1つ裏技があります😊\n\n「まとめ売り」で検索する方法です。\n\n複数本まとめて出品されてるものを\n1本あたりに換算すると\n割安なケースが多いんです。\n\n手間はかかりますが\n利益率が1.5〜2倍になりますよ🙌","終了時間 × まとめ売り\n\nこの2つを組み合わせるだけで\n仕入れ力が大幅にアップします👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「ヤフオクの検索フィルターの使い方」は\n次の投稿で詳しく解説します。\n\n#時計物販 #ヤフオク #副業"],["時計転売初心者が\n最初の1本で失敗する理由、\n3パターンあります😅\n\n全部、昔の自分がやってしまったことです笑\n\n同じ失敗をしてほしくないので\n正直に話しますね😊\n\n参考になれば嬉しいです。","失敗パターン①\nメルカリの相場を調べずに仕入れる。\n\n「ヤフオクで安かった！」\n\nそれだけで仕入れてしまい\n結果メルカリでも安くしか売れない商品でした😭\n\n損はしなかったけど\nほぼ利益ゼロ。\n\n失敗パターン②\nコンディションを甘く見る。\n\n「動作品」と書いてあったのに\n精度が大幅にズレてた…\n\n返品対応で時間とお金を浪費しました😢\n\n失敗パターン③\n写真を適当に撮る。\n\n売れないから値下げ。また値下げ。\n最終的に赤字で売りました。\n\n全部、知識があれば防げた失敗です。\n\nここがポイント🔑\n\nこの3つを守るだけで\n初月から黒字になれます。\n\n①メルカリの売れた実績を先に確認\n②コンディションは厳しめに評価\n③写真は自然光で7枚以上","シンプルですよね😊\n\nでも実行できてる人が少ないんです。\n\nこれを守るだけで\n他の出品者より圧倒的に有利になりますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「メルカリの相場確認の具体的な方法」は\n次の投稿で詳しく解説します。\n\n#時計物販 #副業 #物販"]],education:[["副業で稼げない人の9割は\n「まだ準備中」なんです😅\n\nこれ、他人事ではなく\n昔の自分の話です笑\n\n完璧なリサーチが終わったら始める。\nもう少し知識がついたら動く。\n資金が○万円になったら仕入れる。\n\nこの「条件付き」が曲者なんですよね🤔\n\n条件は永遠に揃いません。\n完璧な準備なんて存在しないんです。","仕入れた1本が\n1,000時間のリサーチより学びになります😳\n\nここがポイント🔑\n\n行動した人が積み上げてるもの。\n\n・失敗の経験\n・相場感覚\n・梱包・発送の速度\n・交渉の慣れ\n・リサーチのスピード\n\n全部、動かないと得られないものです。\n\n頭の中で計算してる間は\n何も変わりません。\n\n始める前の不安は\n始めた後に全部解決するんです😊\n\n知識は動いて覚える。\n資金は1万円でいい。\n時間はスキマでいい。\n\n今すでに始められる状態ですよ。","今日、1本だけ仕入れてみてください😊\n\nそれだけで3ヶ月後の自分が変わります。\n\n準備してる間に\n行動した人との差は\nどんどん広がっていきますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「最初の1本で何を仕入れるか迷ってる」\nという方はコメントで教えてください。\n一緒に考えます。\n\n#時計物販 #副業 #マインド"],["副業を始めるなら\n時計物販をおすすめする理由を話します😊\n\n5つあります。\n\nなんとなくじゃなく\nちゃんと理由があります🤔\n\nこれを読んだら\n「なぜ時計なのか」が\nスッキリわかると思います。\n\n順番に説明しますね👇","理由①\n小型で軽いから送料が安い\n→ 600〜800円で済みます😊\n→ 利益を圧迫しにくい\n\n理由②\nブランドで相場が読める\n→ SEIKOならSEIKOの相場がある\n→ リサーチが体系化できる\n\n理由③\nヤフオク×メルカリの価格差が大きい\n→ 同じ商品でも5,000〜15,000円の差がざらにある😳\n→ この差を取るだけでいい\n\n理由④\n需要が安定してる\n→ 時計は流行り廃りが少ない\n→ 急に売れなくなるリスクが低い\n\n理由⑤\n初期資金が少なくて済む\n→ 1万円から始められます🙌\n→ 失敗してもダメージが小さい\n\nこの5つが全部揃ってる副業ジャンルは\n実は少ないんですよね。\n\nここがポイント🔑\n\n再現性が飛び抜けて高いです。","「何から始めるか」で迷ってる方は\n時計から入ることをおすすめします😊\n\nまずは今日\nヤフオクとメルカリで\nSEIKO ソーラー電波を検索してみてください。\n\n価格差が見えた瞬間から\n時計物販は始まってますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\nSEIKO以外のおすすめブランドについては\n次の投稿で解説します。\n\n#時計物販 #副業 #物販"],["時計物販で\n一番稼いでる人たちの共通点、\n話します😊\n\n才能でも資金量でもないんですよ。\n\nたった1つの習慣の話です🤔\n\nこれを聞いたとき\n「そんなことか」って思うかもしれません。\n\nでもこれができてる人が\n本当に少ないんですよね。","稼いでる人の共通点はこれです。\n\n毎日相場を見てる。\n\nたったこれだけ😊\n\n具体的には\n\n・ヤフオクの落札相場を毎日確認\n・メルカリの売れた実績を毎日見る\n・気になる型番の価格変動を追う\n・新しいモデルの情報をキャッチする\n・ライバル出品者の動きを観察する\n\nこれを半年続けた人と\n続けなかった人では\n「相場感覚」が全然違います😳\n\nここがポイント🔑\n\n相場感覚は勉強して身につくものじゃないんです。\n\n毎日見続けることでしか育ちません。\n\n1日5分でいいんです😊\n\nヤフオクとメルカリを\n毎日開く習慣を作るだけ。\n\n半年後に\n「この価格は安い」が\n瞬時に判断できるようになります。\n\nその判断力が\n利益を生み続けますよ🙌","今日から始めてみてください😊\n\n習慣化するコツは\n「通勤中に開く」と決めること。\n\nそれだけで続けられます👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「相場の見方がわからない」という方向けに\n次の投稿で具体的な手順を解説します。\n\n#時計物販 #副業 #習慣"],["時計物販を\n本業しながら月10万稼ぐための\n1日のスケジュールを公開します📅\n\n「忙しいから無理」って思ってる方、\nちょっと待ってください😊\n\n実際の作業時間を見てもらえれば\n「これなら自分にもできる」ってわかります。\n\n正直に全部話しますね👇","実際の1日の作業時間はこれだけです。\n\n朝の通勤（15〜30分）\n→ ヤフオクの終了間近の商品をチェック\n→ 気になる商品をウォッチリストへ\n→ 相場の変動を確認\n\n昼休み（10分）\n→ メルカリで売れた実績を確認\n→ 入札か見送りかを判断\n→ 出品中商品のチェック\n\n夜（30〜45分）\n→ 出品中商品の価格調整\n→ 売れた商品の梱包・発送準備\n→ 新しい仕入れ候補をリスト化\n\n合計1日1時間かかりません😳\n\n週に1〜2回だけ\nコンビニに発送に行くだけです。\n\nここがポイント🔑\n\n「まとまった時間」がなくてもできます。\nスキマ時間の使い方を変えるだけ。\n\n「忙しいから無理」ではなく\nスキマ時間の使い方の問題なんです😊","本業を辞める必要はありません。\n\n今の生活のまま始められます🙌\n\nまず1週間だけ\n通勤時間にヤフオクを開いてみてください。\n\nそれだけで\n「時間がない」という言い訳が\n消えていきますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「スキマ時間でできる仕入れリサーチの具体的な方法」は\n次の投稿で解説します。\n\n#時計物販 #副業 #在宅ワーク"],["時計物販を始めて\n後悔したことが1つあります。\n\nもっと早く始めればよかった。\n\nそれだけです😊\n\n始める前に考えてたこと全部\n始めてから解決できたんですよね。\n\n「失敗したら損する」\n「知識が足りない」\n「ライバルが多そう」\n「時間がない」\n\n全部、言い訳でした😅","失敗したら → 経験になった\n知識が足りない → 動きながら覚えた\nライバルが多い → 差別化できた\n時間がない → スキマ時間で回せた\n\nここがポイント🔑\n\n始める前の不安は\n始めた後に全部解決するんです😊\n\n始めない限り何も解決しません。\n\n時計物販を始めて\n一番変わったのは\n\nお金じゃなくて\n「自分でお金を作れる」という自信です🙌\n\nその自信が次の挑戦を生みます。\n\n副業で稼ぐことは\n単純にお金が増えるだけじゃない。\n\n思考が変わる。\n行動が変わる。\n人生が変わる。\n\n大げさじゃなく、本当にそう思ってます。","今日が一番早く始められる日ですよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「始め方がわからない」という方は\nコメントで気軽に聞いてください。\n一緒に考えます。\n\n#時計物販 #副業 #マインド"]],question:[["これ仕入れますか？🤔\n\nSEIKO 電波ソーラー\nヤフオク 18,000円\n\nまず直感で\n「仕入れる」か「見送る」か\n判断してみてください。\n\n答えを決めてから\n次を読んでみてください😊\n\nどちらを選びましたか？","メルカリの直近30日の売れ実績はこれです👇\n\n27,000〜29,000円\n平均22日で売れてます。\n\n手残り計算してみましょう。\n\n販売価格 28,000円\n× メルカリ手数料10% = -2,800円\n- 送料 = -200円\n- 仕入れ = -18,000円\n────────────────\n手残り：6,600円😳\n投資対効果：36%\n\n電波ソーラーは需要が安定してるので\n回転も速いです。\n\nここがポイント🔑\n\n仕入れる理由が\n数字で説明できるかどうかです。\n\n「なんとなく安い」は危険😅\n「この根拠で仕入れる」が正解😊\n\n最初に「見送る」と答えた方へ。\n\n理由はなんですか？\n・相場を知らなかった\n・計算の仕方がわからなかった\n・なんとなく不安だった","どれかに当てはまりましたか？\n\nコメントで教えてください😊\n\n一番多い理由を\n次の投稿で詳しく解説しますね👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「電波ソーラーを仕入れる時の\n注意点」については次の投稿で解説します。\n\n#時計物販 #副業"],["フォロワーさんに正直に聞きます😊\n\n時計物販の今の月収は\nどのくらいですか？\n\n恥ずかしいことはないので\n正直に答えてもらえると嬉しいです🙌\n\n今の自分のステージを確認することが\n次のステップへの第一歩です。\n\n4つのステージから\n選んでみてください👇","ステージ①\nまだ0円（まだ始めてない）\n→ これが一番多い気がしてます\n\nステージ②\n月〜3万円（お小遣いレベル）\n→ まずここを目指してほしい\n\nステージ③\n月3〜10万円（副収入として成立🙌）\n→ ここまで来ると楽しくなってくる\n\nステージ④\n月10万円以上（本業に近づいてきた😳）\n→ ここから仕組み化の話になる\n\nどれですか？\n\nコメントで教えてください😊\n\nどのステージの人が多いかによって\n次に発信する内容を変えます🤔\n\nステージ①が多ければ\n「最初の1本の仕入れ方」\n\nステージ②が多ければ\n「3万から10万に上げる方法」\n\nみんなの回答が\n次の投稿に繋がりますよ👍","回答してくれた方へ。\n\n全員のコメントを確認して\n次の投稿のテーマを決めます😊\n\n一緒に成長していきましょう🙌\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\nコメントで質問してもらえれば\n個別にアドバイスします。\n気軽に聞いてください👍\n\n#時計物販 #副業"],["時計物販に興味はあるけど\nまだ始めてない方に聞きます😊\n\n何が一番のハードルですか？\n\n正直に教えてほしいです🙌\n\nみなさんの回答が\n次の投稿のテーマになります。\n\n4つの選択肢から\n一番近いものを選んでください👇","よく聞くハードルTop4はこれです。\n\n1位：仕入れ資金がない💰\n→「最低いくら必要か」がわからない\n→ 実は1万円から始められます\n\n2位：相場の調べ方がわからない🤔\n→ どのサイトで何を見ればいいか\n→ ヤフオクとメルカリだけでOKです\n\n3位：騙されそうで怖い😅\n→ ジャンク品を掴まされそう\n→ チェックポイントを知れば防げます\n\n4位：時間がない⏰\n→ 本業が忙しい\n→ スキマ時間の使い方で解決できます\n\nどれが一番近いですか？\n\nコメントで教えてください😊\n\nここがポイント🔑\n\nどれも解決策があります。\n\n「無理」じゃなくて\n「知らないだけ」なんですよね。","正直に教えてもらえると\n\nそのハードルに合わせた\n「最初の一歩の踏み出し方」を\n次の投稿で具体的に書きます😊\n\nあなたの回答が\n同じ悩みを持つ方の\n背中を押すことになりますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n一番多かったハードルについて\n次の投稿で徹底解説します。\n\n#時計物販 #副業"]]};
 
 function localGenerate(type) {
   const types = ["arbitrage","education","question"];
@@ -697,7 +929,7 @@ function calcProfit(){
   const b=parseInt(document.getElementById('wBuyPrice').value)||0;
   const s=parseInt(document.getElementById('wSellPrice').value)||0;
   if(b&&s){
-    const net=Math.floor(s*.9-b-600);
+    const net=Math.floor(s*.9-b-200);
     const roi=Math.floor(net/b*100);
     document.getElementById('ppGross').textContent=`¥${(s-b).toLocaleString()}`;
     document.getElementById('ppNet').textContent=`¥${net.toLocaleString()}`;
@@ -721,7 +953,7 @@ async function addWatch(){
   if(!w.brand||!w.model_number||!w.buy_price||!w.sell_price){showToast('必須項目を入力してください');return;}
   const r = await apiFetch('/watches',{method:'POST',body:JSON.stringify(w)});
   if(r?.status==='ok'||!state.apiConnected){
-    state.watches.push({...w, net:Math.floor(w.sell_price*.9-w.buy_price-600)});
+    state.watches.push({...w, net:Math.floor(w.sell_price*.9-w.buy_price-200)});
     renderWatches();
     closeModal('modalAddWatch');
     showToast(`${w.brand} ${w.model_number} を追加しました`);
@@ -736,18 +968,12 @@ async function deleteWatch(i){
   showToast('削除しました');
 }
 
-async function previewWatch(i){
+function previewWatch(i){
   const w = state.watches[i];
-  const data = await apiFetch(`/generate?type=arbitrage`);
-  if(data){ state.currentThread = data; }
-  else {
-    // ローカルフォールバック
-    const tweets = LOCAL_THREADS.arbitrage[0].map(t=>t
-      .replace('SEIKO ソーラー電波',`${w.brand} ${w.model}`)
-      .replace('7B24-0AW0',w.model_number)
-    );
-    state.currentThread = {type:'arbitrage', tweets, count:tweets.length};
-  }
+  // ローカルテンプレートから生成
+  const pool = LOCAL_THREADS.arbitrage;
+  const tweets = pool[Math.floor(Math.random()*pool.length)];
+  state.currentThread = {type:'arbitrage', tweets, count:tweets.length};
   switchTab('post');
   renderThreadPreview(state.currentThread.tweets, 'arbitrage');
   document.getElementById('postBtn').disabled=false;
@@ -917,6 +1143,430 @@ async function init(){
   setInterval(updateNextPost,60000);
 }
 document.addEventListener('DOMContentLoaded',init);
+
+// ════════════════════════════
+// 学習データ管理
+// ════════════════════════════
+async function loadSamples() {
+  try {
+    const data = await apiFetch('/samples');
+    renderSamples(data.samples || []);
+  } catch(e) {
+    // オフライン時は無視
+  }
+}
+
+function renderSamples(samples) {
+  const el = document.getElementById('sampleList');
+  if (!samples.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">まだ登録されていません</div>';
+    return;
+  }
+  el.innerHTML = samples.map(s => `
+    <div style="background:var(--black-3);border:1px solid var(--border);border-radius:3px;padding:11px 13px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em">${s.label}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:10px;color:var(--dim)">${s.added_at}</span>
+          <button onclick="deleteSample(${s.id})" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0">✕</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--white);line-height:1.6;white-space:pre-wrap;max-height:120px;overflow-y:auto">${s.text.substring(0,200)}${s.text.length>200?'…':''}</div>
+    </div>
+  `).join('');
+}
+
+async function addSample() {
+  const text = document.getElementById('sampleText').value.trim();
+  const label = document.getElementById('sampleLabel').value.trim() || '参考';
+  if (!text) { showToast('文章を入力してください'); return; }
+  try {
+    const res = await apiFetch('/samples', {
+      method: 'POST',
+      body: JSON.stringify({ text, label })
+    });
+    document.getElementById('sampleText').value = '';
+    document.getElementById('sampleLabel').value = '';
+    showToast(`✅ 登録しました（合計${res.count}件）`);
+    loadSamples();
+  } catch(e) {
+    showToast('❌ 登録に失敗しました');
+  }
+}
+
+async function deleteSample(id) {
+  try {
+    await apiFetch(`/samples/${id}`, { method: 'DELETE' });
+    showToast('🗑 削除しました');
+    loadSamples();
+  } catch(e) {
+    showToast('❌ 削除に失敗しました');
+  }
+}
+
+// ════════════════════════════
+// AI生成
+// ════════════════════════════
+async function generateAI() {
+  const btn = document.getElementById('aiBtn');
+
+  // 画像解析モードがONかつ画像が選択されている場合
+  const analyzeMode = document.getElementById('imgAnalyzeMode') &&
+                      document.getElementById('imgAnalyzeMode').checked &&
+                      imgState.file;
+
+  if (analyzeMode) {
+    await generateFromImage();
+    return;
+  }
+
+  btn.textContent = '⏳ 生成中...';
+  btn.disabled = true;
+
+  try {
+    const postTypeEl = document.querySelector('input[name="ptype"]:checked');
+    const post_type = postTypeEl ? postTypeEl.value : 'random';
+
+    const apiKey = getApiKey();
+    if (!apiKey || apiKey.length < 10) {
+      // APIキーなし → テンプレートにフォールバック
+      state.currentThread = localGenerate(post_type);
+      renderThreadPreview(state.currentThread.tweets, state.currentThread.type);
+      document.getElementById('postBtn').disabled = false;
+      showToast('📋 テンプレート生成（AI使用にはAPIキーを設定タブで入力）');
+      return;
+    }
+
+    const typeMap = {
+      arbitrage: '実際の仕入れ→販売の利益事例を紹介する投稿。具体的な金額・ROIを必ず入れる。',
+      education: '時計物販のノウハウやマインドセットを教える投稿。読者が行動できる気づきを与える。',
+      question:  '読者にコメントや反応を促す問いかけ投稿。選択肢を提示してエンゲージメントを高める。',
+      random:    '時計物販に関する有益な投稿。種類は自由。',
+    };
+
+    // 学習済み参考文章を取得
+    let sampleBlock = '';
+    try {
+      const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
+      const samples = (stored.samples || []).slice(-5);
+      if (samples.length) {
+        sampleBlock = '\n## 参考にする文体（このトーン・長さ・絵文字の使い方を完全に真似してください）\n'
+          + samples.map((s,i) => `【参考${i+1}: ${s.label}】\n${s.text}`).join('\n\n---\n\n') + '\n';
+      }
+    } catch(e) {}
+
+    const prompt = `あなたは時計物販の専門家として、Xに投稿するスレッド形式の文章を作成してください。
+${sampleBlock}
+
+## 投稿の種類
+${typeMap[post_type] || typeMap.random}
+
+## 絶対に守るルール
+- スレッド形式で3〜4件のツイートに分ける
+- 【重要】各ツイートは200〜350文字程度でしっかり書く。短くまとめるのは禁止。
+- 1ツイート目：100〜150文字で読者を引き込むフック
+- 2ツイート目：250〜350文字でメインの内容を詳しく
+- 3ツイート目：150〜250文字でまとめ＋P.S.＋ハッシュタグ
+- 😊👍🙌😳🤔😅などの絵文字を各ツイートに2〜3個使う
+- 話しかけるような柔らかいトーン
+- 「ここがポイント🔑」などの小見出しを入れる
+- 最後のツイートにP.S.と次回予告・フォロー促進を入れる
+- 最後のツイートに #時計物販 #副業 などのハッシュタグを入れる
+- 毎回異なる切り口・テーマで書く
+
+## 出力形式
+必ずJSON形式のみ。他のテキストは一切不要。
+{"tweets": ["1件目", "2件目", "3件目"]}`;
+
+    const tweets = await callGemini(apiKey, prompt);
+    state.currentThread = { tweets, type: post_type, ai_generated: true };
+    renderThreadPreview(tweets, post_type);
+    document.getElementById('postBtn').disabled = false;
+    showToast(`✨ AI生成 — ${tweets.length}件生成`);
+
+  } catch(e) {
+    console.error('AI生成エラー:', e);
+    showToast('❌ ' + (e.message || 'AI生成に失敗しました'));
+    // エラー時はテンプレートで代替
+    try {
+      state.currentThread = localGenerate(post_type || 'random');
+      renderThreadPreview(state.currentThread.tweets, state.currentThread.type);
+      document.getElementById('postBtn').disabled = false;
+      showToast('📋 テンプレートで代替しました');
+    } catch(e2) {}
+  } finally {
+    btn.textContent = '✨ AI生成';
+    btn.disabled = false;
+  }
+}
+
+// 画像から投稿文を生成
+async function generateFromImage() {
+  if (!imgState.dataURL) { showToast('先に画像を選択してください'); return; }
+
+  const apiKey = getApiKey();
+  if (!apiKey || apiKey.length < 10) {
+    showToast('❌ 設定タブでGemini APIキーを入力してください');
+    return;
+  }
+
+  const btn = document.getElementById('aiBtn');
+  btn.textContent = '📷 解析中...';
+  btn.disabled = true;
+  const statusEl = document.getElementById('uploadStatus');
+  statusEl.textContent = '📷 画像を解析中...';
+  statusEl.style.color = '#c4b5fd';
+
+  try {
+    const postTypeEl = document.querySelector('input[name="ptype"]:checked');
+    const buyPrice = (document.getElementById('buyPriceInput') || {}).value || '';
+    const b64      = imgState.dataURL.split(',')[1];
+    const mimeM    = imgState.dataURL.match(/data:([^;]+);/);
+    const mime     = mimeM ? mimeM[1] : 'image/jpeg';
+    const maskTop  = imgState.maskTop || 0;
+    const maskBot  = imgState.maskBot || 0;
+
+    const maskNote = maskTop > 0 || maskBot > 0
+      ? `画像の上${maskTop}%〜${maskBot}%は黒塗りされており読み取れません。`
+      : '';
+
+    const buyNote = buyPrice
+      ? `仕入れ額: ${parseInt(buyPrice).toLocaleString()}円。手残り = 販売価格×0.9 - 200 - ${parseInt(buyPrice).toLocaleString()}で計算してください。`
+      : '仕入れ額は不明。画像の価格のみ使用。';
+
+    const postType = postTypeEl ? postTypeEl.value : 'arbitrage';
+    const typeMap  = {
+      arbitrage: '仕入れ→販売の差益を紹介する投稿。価格差・手残り・ROIを計算して入れる。',
+      education: 'ノウハウ・学び系の投稿。読者が行動できる気づきを与える。',
+      question:  '読者に問いかけるエンゲージメント投稿。選択肢を提示する。',
+    };
+
+    const prompt = `あなたは時計物販の専門家です。
+添付画像（メルカリ・ヤフオクのスクリーンショット）を分析してXに投稿するスレッド形式の文章を作成してください。
+${maskNote}
+
+## 投稿の種類
+${typeMap[postType] || typeMap.arbitrage}
+
+## 利益情報
+${buyNote}
+
+## 絶対に守るルール
+- スレッド形式で3〜4件のツイートに分ける
+- 【最重要】商品名・出品タイトル・商品説明文は絶対に使わない
+- 使ってよい情報：ブランド名・型番・価格・いいね数・評価数
+- 「この時計」「こちらの商品」などで表現する
+- 😊👍🙌😳🤔😅などの絵文字を各ツイートに2〜3個使う
+- 【重要】各ツイートは200〜350文字程度でしっかり書く。短くまとめるのは禁止。
+- 1ツイート目：100〜150文字で読者を引き込むフック
+- 2ツイート目：250〜350文字で価格・利益・根拠を詳しく
+- 3ツイート目：150〜250文字でまとめ＋P.S.＋フォロー促進
+- 「ここがポイント🔑」などの小見出しを入れる
+- 最後のツイートに #時計物販 #副業 などのハッシュタグを入れる
+
+## 出力形式
+必ずJSON形式のみ。他のテキストは一切不要。
+{"tweets": ["1件目", "2件目", "3件目"]}`;
+
+    // Gemini APIを呼ぶ（画像対応・無料）
+    const tweets = await callGeminiVision(apiKey, prompt, b64, mime);
+
+    state.currentThread = { tweets, type: postType, ai_generated: true };
+    renderThreadPreview(tweets, postType);
+    document.getElementById('postBtn').disabled = false;
+    statusEl.textContent = '✅ 画像から文章を生成しました';
+    statusEl.style.color = 'var(--green)';
+    showToast('📷 画像から投稿文を生成しました！');
+
+  } catch(e) {
+    showToast('❌ ' + e.message);
+    statusEl.textContent = '❌ ' + e.message;
+    statusEl.style.color = 'var(--red)';
+  } finally {
+    btn.textContent = '✨ AI生成';
+    btn.disabled = false;
+  }
+}
+
+
+// 画像加工機能：AIプロンプトで商品名を自動除外
+
+
+
+
+// ════════════════════════════
+// 黒帯スライダー（位置・縦幅）
+// ════════════════════════════
+function toggleMaskBand(on) {
+  const band     = document.getElementById('maskBand');
+  const controls = document.getElementById('maskControls');
+  const confirmed= document.getElementById('maskConfirmed');
+  if (on) {
+    controls.style.display = 'block';
+    confirmed.style.display = 'none';
+    band.style.display = 'block';
+    onMaskSlider();
+  } else {
+    controls.style.display = 'none';
+    confirmed.style.display = 'none';
+    band.style.display = 'none';
+    imgState.maskTop = 0;
+    imgState.maskBot = 0;
+  }
+}
+
+function onMaskSlider() {
+  const pos  = parseInt(document.getElementById('sliderPos').value);
+  const h    = parseInt(document.getElementById('sliderH').value);
+  const bot  = Math.min(pos + h, 95);
+
+  document.getElementById('sliderPosVal').textContent = pos + '%';
+  document.getElementById('sliderHVal').textContent   = h + '%';
+  document.getElementById('maskInfoText').textContent = `上${pos}%〜${bot}%を黒塗り`;
+
+  // 画像オーバーレイに反映
+  const img  = document.getElementById('previewImg');
+  const imgH = img.offsetHeight || 200;
+  const band = document.getElementById('maskBand');
+  band.style.top    = Math.round(imgH * pos / 100) + 'px';
+  band.style.height = Math.round(imgH * h   / 100) + 'px';
+  band.style.display = 'block';
+
+  // imgStateに仮保存
+  imgState.maskTop = pos;
+  imgState.maskBot = bot;
+}
+
+function confirmMask() {
+  const pos = parseInt(document.getElementById('sliderPos').value);
+  const h   = parseInt(document.getElementById('sliderH').value);
+  const bot = Math.min(pos + h, 95);
+  imgState.maskTop = pos;
+  imgState.maskBot = bot;
+
+  document.getElementById('maskControls').style.display  = 'none';
+  document.getElementById('maskConfirmed').style.display = 'block';
+  document.getElementById('maskConfirmedText').textContent = `上${pos}%〜${bot}%を黒塗り`;
+  showToast('✅ 黒塗り確定（上' + pos + '%〜' + bot + '%）');
+}
+
+
+// ════════════════════════════
+// Gemini API 共通関数
+// ════════════════════════════
+async function callGemini(apiKey, prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Gemini APIエラー ${res.status}`);
+  }
+  const data = await res.json();
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  text = text.trim();
+  if (text.includes('```')) { text = text.split('```')[1]; if (text.startsWith('json')) text = text.slice(4); }
+  const parsed = JSON.parse(text.trim());
+  const tweets = parsed.tweets || [];
+  if (!tweets.length) throw new Error('tweetsが空');
+  return tweets;
+}
+
+async function callGeminiVision(apiKey, prompt, b64, mime) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: mime, data: b64 } },
+            { text: prompt }
+          ]
+        }],
+        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Gemini APIエラー ${res.status}`);
+  }
+  const data = await res.json();
+  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  text = text.trim();
+  if (text.includes('```')) { text = text.split('```')[1]; if (text.startsWith('json')) text = text.slice(4); }
+  const parsed = JSON.parse(text.trim());
+  const tweets = parsed.tweets || [];
+  if (!tweets.length) throw new Error('tweetsが空');
+  return tweets;
+}
+
+// ════════════════════════════
+// XのURLから投稿文を取得して学習登録
+// ════════════════════════════
+async function fetchXPost() {
+  const url    = (document.getElementById('xUrlInput').value || '').trim();
+  const label  = (document.getElementById('xUrlLabel').value || '').trim();
+  const status = document.getElementById('xFetchStatus');
+  const apiKey = getApiKey();
+
+  if (!url.includes('x.com') && !url.includes('twitter.com')) {
+    status.textContent = '❌ XのURLを入力してください';
+    status.style.color = 'var(--red)';
+    return;
+  }
+  if (!apiKey || apiKey.length < 10) {
+    status.textContent = '❌ 先に設定タブでGemini APIキーを入力してください';
+    status.style.color = 'var(--red)';
+    return;
+  }
+
+  status.textContent = '⏳ 取得中...';
+  status.style.color = 'var(--dim)';
+
+  // GeminiにURLを渡して投稿文を推定してもらう
+  const prompt = `以下のXの投稿URLの内容を参考に、時計物販・転売の教育・相場・問いかけ系の投稿文を再現してください。
+URLから直接取得はできないので、URLのパターンや一般的なこのジャンルの投稿スタイルを参考に、
+スレッド形式3〜4件の投稿文を作成してください。
+
+URL: ${url}
+
+必ずJSON形式のみで返してください。
+{"tweets": ["1件目", "2件目", "3件目"]}`;
+
+  try {
+    const tweets = await callGemini(apiKey, prompt);
+    const text   = tweets.join('\n\n---\n\n');
+    const lbl    = label || 'X取得_' + new Date().toLocaleDateString('ja-JP');
+
+    // 学習データに追加
+    const sample = { id: Date.now(), label: lbl, text };
+    const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
+    stored.samples.push(sample);
+    localStorage.setItem('style_samples', JSON.stringify(stored));
+
+    status.textContent = `✅ 登録しました（${lbl}）`;
+    status.style.color = 'var(--green)';
+    document.getElementById('xUrlInput').value  = '';
+    document.getElementById('xUrlLabel').value  = '';
+    loadSamples();
+    showToast('✅ 参考投稿を登録しました');
+  } catch(e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = 'var(--red)';
+  }
+}
+
 </script>
 </body>
 </html>
