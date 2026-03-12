@@ -1,1656 +1,2405 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>TOKEI POST — 管理ダッシュボード</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root {
-  --black:   #090909;
-  --black-2: #111111;
-  --black-3: #1a1a1a;
-  --black-4: #242424;
-  --gold:    #c9a84c;
-  --gold-l:  #e2c97e;
-  --gold-d:  #7a6330;
-  --white:   #f0ede6;
-  --dim:     #9a9488;
-  --green:   #27ae60;
-  --red:     #c0392b;
-  --blue:    #5dade2;
-  --border:  rgba(201,168,76,.18);
-  --border-h:rgba(201,168,76,.45);
-  --font-d:  'Cormorant Garamond', serif;
-  --font-b:  'Noto Sans JP', sans-serif;
-  --font-m:  'JetBrains Mono', monospace;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--black);color:var(--white);font-family:var(--font-b);font-size:14px;min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
-
-/* HEADER */
-header{position:sticky;top:0;z-index:100;background:rgba(9,9,9,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:52px}
-.logo{font-family:var(--font-d);font-size:21px;font-weight:700;letter-spacing:.1em;color:var(--gold)}
-.logo span{color:var(--dim);font-weight:400;font-size:12px;letter-spacing:.18em;margin-left:8px}
-.hd-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim);font-family:var(--font-m)}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
-.dot.off{background:var(--red);box-shadow:0 0 8px var(--red);animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-
-/* NAV */
-nav{display:flex;border-bottom:1px solid var(--border);padding:0 16px;background:var(--black-2);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-nav::-webkit-scrollbar{display:none}
-.tab{padding:13px 16px;font-size:12px;font-weight:500;letter-spacing:.1em;color:var(--dim);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;font-family:var(--font-b)}
-.tab:hover{color:var(--white)}
-.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
-
-/* MAIN */
-main{padding:16px;max-width:600px;margin:0 auto;position:relative;z-index:1}
-.section{display:none;animation:fadeUp .3s ease}
-.section.active{display:block}
-@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-
-/* CARD */
-.card{background:var(--black-2);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px;transition:border-color .2s}
-.card:hover{border-color:var(--border-h)}
-.card-title{font-family:var(--font-d);font-size:16px;font-weight:600;color:var(--gold-l);letter-spacing:.08em;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-
-/* STAT GRID */
-.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
-.stat-box{background:var(--black-3);border:1px solid var(--border);border-radius:3px;padding:12px;text-align:center}
-.stat-num{font-family:var(--font-d);font-size:30px;font-weight:700;color:var(--gold);line-height:1;margin-bottom:3px}
-.stat-label{font-size:9px;color:var(--dim);letter-spacing:.15em}
-
-/* NEXT POST BANNER */
-.next-banner{background:linear-gradient(135deg,rgba(201,168,76,.09),rgba(201,168,76,.03));border:1px solid var(--gold-d);border-radius:3px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.next-banner .nb-label{font-size:9px;color:var(--dim);letter-spacing:.15em;margin-bottom:2px}
-.next-banner .nb-time{font-family:var(--font-m);font-size:22px;color:var(--gold)}
-.next-banner .nb-in{font-size:10px;color:var(--dim);text-align:right}
-
-/* THREAD PREVIEW */
-.thread-wrap{position:relative}
-.thread-tweet{background:var(--black-3);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:0;position:relative}
-.thread-tweet+.thread-tweet{margin-top:0;border-top:none;border-radius:0 0 4px 4px}
-.thread-tweet:first-child{border-radius:4px 4px 0 0}
-.thread-tweet:only-child{border-radius:4px}
-.thread-connector{width:2px;height:16px;background:var(--gold-d);margin:0 auto;display:block}
-.tweet-num{font-size:9px;color:var(--gold-d);font-family:var(--font-m);margin-bottom:6px;letter-spacing:.1em}
-.tweet-body{font-size:12px;line-height:1.9;color:var(--white);white-space:pre-wrap;font-family:var(--font-m)}
-.tweet-chars{text-align:right;font-size:9px;color:var(--dim);font-family:var(--font-m);margin-top:6px}
-.tweet-chars.over{color:var(--red)}
-
-/* POST ACTION BAR */
-.post-action{display:flex;gap:8px;margin-top:14px;align-items:center}
-.post-action .post-type-badge{font-size:9px;font-weight:700;letter-spacing:.12em;padding:3px 8px;border-radius:2px;flex-shrink:0}
-.badge-arb{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid var(--gold-d)}
-.badge-edu{background:rgba(39,174,96,.12);color:#2ecc71;border:1px solid rgba(39,174,96,.3)}
-.badge-qst{background:rgba(93,173,226,.12);color:var(--blue);border:1px solid rgba(93,173,226,.3)}
-
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--font-b);font-size:12px;font-weight:700;letter-spacing:.1em;padding:10px 16px;border:none;border-radius:3px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;outline:none}
-.btn-gold{background:var(--gold);color:var(--black)}
-.btn-gold:hover{background:var(--gold-l)}
-.btn-gold:disabled{background:var(--gold-d);color:rgba(0,0,0,.4);cursor:not-allowed}
-.btn-outline{background:transparent;border:1px solid var(--border-h);color:var(--dim)}
-.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
-.btn-danger{background:transparent;border:1px solid rgba(192,57,43,.4);color:var(--red);font-size:11px;padding:7px 11px}
-.btn-danger:hover{background:rgba(192,57,43,.1)}
-.btn-sm{padding:7px 12px;font-size:11px}
-.btn-full{width:100%}
-
-/* POST BUTTON — large CTA */
-.btn-post{background:var(--gold);color:var(--black);font-size:14px;font-weight:700;padding:14px 24px;border-radius:3px;flex:1;letter-spacing:.08em}
-.btn-post:hover{background:var(--gold-l)}
-.btn-post:disabled{background:var(--gold-d);color:rgba(0,0,0,.4);cursor:not-allowed}
-.btn-post.posting{animation:posting .8s infinite alternate}
-@keyframes posting{from{opacity:1}to{opacity:.6}}
-
-/* TOGGLE */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
-.toggle-row:last-child{border-bottom:none}
-.toggle-info strong{font-size:13px;font-weight:500;display:block;margin-bottom:2px}
-.toggle-info small{font-size:11px;color:var(--dim)}
-.toggle{position:relative;width:44px;height:24px;flex-shrink:0;cursor:pointer}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--black-4);border:1px solid var(--border);border-radius:24px;transition:.25s}
-.toggle-slider::before{content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:var(--dim);transition:.25s}
-.toggle input:checked+.toggle-slider{background:var(--gold-d);border-color:var(--gold)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(20px) translateY(-50%);background:var(--gold)}
-
-/* SCHEDULE */
-.schedule-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-.sch-time{background:var(--black-3);border:1px solid var(--border);border-radius:3px;padding:10px 5px;text-align:center;cursor:pointer;transition:all .2s}
-.sch-time.active{border-color:var(--gold);background:rgba(201,168,76,.08)}
-.sch-time .t{font-family:var(--font-m);font-size:14px;color:var(--gold-l)}
-.sch-time .tl{font-size:9px;color:var(--dim);margin-top:3px;letter-spacing:.08em}
-
-/* HISTORY */
-.hist-item{padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer}
-.hist-item:last-child{border-bottom:none}
-.hist-meta{display:flex;align-items:center;gap:7px;margin-bottom:5px}
-.htag{font-size:9px;font-weight:700;letter-spacing:.12em;padding:2px 7px;border-radius:2px}
-.hist-time{font-size:10px;color:var(--dim);font-family:var(--font-m);margin-left:auto}
-.hist-prev{font-size:12px;color:var(--dim);line-height:1.6;white-space:pre-wrap}
-
-/* WATCH LIST */
-.watch-item{padding:13px;background:var(--black-3);border:1px solid var(--border);border-radius:3px;margin-bottom:7px}
-.watch-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px}
-.watch-name{font-weight:700;font-size:13px}
-.watch-num{font-family:var(--font-m);font-size:10px;color:var(--gold);margin-top:2px}
-.watch-profit{font-family:var(--font-d);font-size:20px;font-weight:700;color:var(--gold);text-align:right;line-height:1}
-.watch-profit small{display:block;font-size:9px;color:var(--dim);font-family:var(--font-b);letter-spacing:.1em}
-.watch-flow{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
-.wprice{font-family:var(--font-m);color:var(--white)}
-.watch-actions{display:flex;gap:6px;margin-top:9px}
-
-/* FORM */
-.form-group{margin-bottom:13px}
-.form-label{display:block;font-size:10px;letter-spacing:.18em;color:var(--dim);margin-bottom:5px;font-weight:500}
-.form-input,.form-select,.form-textarea{width:100%;background:var(--black-3);border:1px solid var(--border);border-radius:3px;color:var(--white);font-family:var(--font-b);font-size:13px;padding:9px 11px;outline:none;transition:border-color .2s;-webkit-appearance:none}
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold)}
-.form-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a84c'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.form-textarea{resize:none;height:70px;line-height:1.5}
-.profit-preview{display:none;margin:10px 0;padding:11px;background:var(--black-3);border:1px solid var(--border);border-radius:3px}
-.profit-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
-
-/* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:200;align-items:flex-end;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal{background:var(--black-2);border:1px solid var(--border);border-radius:6px 6px 0 0;padding:22px 16px;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;animation:slideUp .28s ease}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-.modal-title{font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--gold-l)}
-.modal-close{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1}
-
-/* TOAST */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--black-3);border:1px solid var(--gold);border-radius:4px;padding:9px 18px;font-size:12px;font-weight:500;color:var(--gold-l);z-index:400;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none}
-.toast.show{opacity:1}
-
-/* PROGRESS */
-.prog-row{margin-bottom:9px}
-.prog-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
-.prog-bar{height:3px;background:var(--black-4);border-radius:2px;overflow:hidden}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold));border-radius:2px;transition:width .6s ease}
-
-/* RANGE */
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--black-4);border-radius:2px;outline:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px rgba(201,168,76,.4)}
-input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;border:none}
-
-/* MISC */
-.divider{height:1px;background:linear-gradient(90deg,transparent,var(--gold-d),transparent);margin:16px 0}
-.empty{text-align:center;padding:36px 16px;color:var(--dim)}
-.empty-icon{font-size:30px;margin-bottom:9px;opacity:.5}
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-track{background:var(--black)}
-::-webkit-scrollbar-thumb{background:var(--black-4);border-radius:2px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Watch OS - 時計物販管理システム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --accent: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f0f2f5;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --sidebar-width: 240px;
+            --sidebar-collapsed: 64px;
+            --header-height: 56px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+ 
+        /* ===== LOGIN ===== */
+        #login-screen {
+            position: fixed; inset: 0; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        #login-screen.hidden { display: none; }
+        .login-box {
+            background: white; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 400px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25); margin: 16px;
+        }
+        .login-logo { text-align: center; margin-bottom: 28px; }
+        .login-logo .logo-icon { font-size: 2.5rem; }
+        .login-logo h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); margin-top: 8px; }
+        .login-logo p { color: var(--text-sub); font-size: 0.85rem; margin-top: 4px; }
+        .login-field { margin-bottom: 16px; }
+        .login-field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .login-field input {
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+        }
+        .login-field input:focus { border-color: var(--primary); }
+        .login-btn {
+            width: 100%; padding: 13px; background: var(--primary); color: white; border: none;
+            border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 8px;
+            transition: background 0.2s;
+        }
+        .login-btn:hover { background: var(--primary-dark); }
+        .login-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+        .login-error { color: var(--danger); font-size: 0.85rem; text-align: center; margin-top: 10px; display: none; }
+        .login-divider { text-align:center; color:var(--text-sub); font-size:0.8rem; margin:14px 0; }
+        .login-invite-link { text-align:center; margin-top:12px; }
+        .login-invite-link button { background:none; border:none; color:var(--primary); font-size:0.85rem; cursor:pointer; text-decoration:underline; }
+        /* ===== ROLE BADGES ===== */
+        .role-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:700; }
+        .role-admin { background:#fef3c7; color:#92400e; }
+        .role-user  { background:#eff6ff; color:#1e40af; }
+        /* ===== ADMIN-ONLY visibility ===== */
+        .admin-only { display: none !important; }
+        body.is-admin .admin-only { display: block !important; }
+        /* ===== INVITE ===== */
+        .invite-box { background:#f0fdf4; border:1px solid #86efac; border-radius:10px; padding:14px 16px; margin-top:14px; }
+        .invite-code { font-family:monospace; font-size:1.1rem; font-weight:700; color:#065f46; letter-spacing:0.1em; background:#dcfce7; padding:8px 14px; border-radius:6px; display:inline-block; margin:6px 0; }
+        .invite-copy-btn { background:none; border:1px solid #86efac; border-radius:6px; padding:4px 10px; font-size:0.78rem; color:#065f46; cursor:pointer; }
+        /* ===== SESSION WARNING ===== */
+        .session-badge { background:#fee2e2; color:#991b1b; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:8px; margin-left:6px; display:none; }
+ 
+        /* ===== LAYOUT ===== */
+        .app { display: flex; min-height: 100vh; }
+ 
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-width); background: var(--sidebar-bg); border-right: 1px solid var(--border);
+            position: fixed; top: 0; left: 0; height: 100vh; z-index: 200; transition: width 0.25s ease;
+            display: flex; flex-direction: column; box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+        }
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+        .sidebar-header {
+            padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;
+            min-height: var(--header-height);
+        }
+        .sidebar-logo { font-size: 1.5rem; flex-shrink: 0; }
+        .sidebar-title { font-size: 1rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; }
+        .sidebar.collapsed .sidebar-title { display: none; }
+        .sidebar-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+        .menu-item {
+            display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 16px;
+            border: none; background: none; cursor: pointer; color: var(--text-sub); font-size: 0.9rem;
+            font-weight: 500; text-align: left; transition: all 0.15s; border-radius: 0; white-space: nowrap;
+        }
+        .menu-item:hover { background: #f1f5f9; color: var(--primary); }
+        .menu-item.active { background: #eff6ff; color: var(--primary); border-right: 3px solid var(--primary); font-weight: 600; }
+        .menu-icon { font-size: 1.1rem; flex-shrink: 0; width: 24px; text-align: center; }
+        .menu-text { white-space: nowrap; overflow: hidden; }
+        .sidebar.collapsed .menu-text { display: none; }
+        .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+        .user-info { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; }
+        .user-avatar { width: 32px; height: 32px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+        .user-name { font-size: 0.85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; }
+        .user-role { font-size: 0.75rem; color: var(--text-sub); }
+        .sidebar.collapsed .user-name, .sidebar.collapsed .user-role { display: none; }
+        .toggle-btn {
+            position: absolute; top: 50%; right: -13px; transform: translateY(-50%);
+            width: 26px; height: 26px; background: white; border: 1px solid var(--border);
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; z-index: 10; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .logout-btn {
+            width: 100%; padding: 8px; background: none; border: 1px solid var(--border); border-radius: 6px;
+            cursor: pointer; color: var(--text-sub); font-size: 0.8rem; margin-top: 8px; transition: all 0.15s;
+        }
+        .logout-btn:hover { background: #fee2e2; color: var(--danger); border-color: var(--danger); }
+        .sidebar.collapsed .logout-btn { display: none; }
+ 
+        /* ===== MOBILE OVERLAY ===== */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 190;
+        }
+        .sidebar-overlay.active { display: block; }
+ 
+        /* ===== MAIN ===== */
+        .main-content {
+            margin-left: var(--sidebar-width); flex: 1; min-height: 100vh; transition: margin-left 0.25s ease;
+        }
+        .main-content.collapsed { margin-left: var(--sidebar-collapsed); }
+ 
+        /* ===== TOP BAR ===== */
+        .topbar {
+            background: white; border-bottom: 1px solid var(--border); height: var(--header-height);
+            display: flex; align-items: center; padding: 0 20px; gap: 12px; position: sticky; top: 0; z-index: 100;
+        }
+        .topbar-hamburger {
+            display: none; background: none; border: none; cursor: pointer; font-size: 1.3rem; padding: 4px;
+        }
+        .topbar-title { font-size: 1rem; font-weight: 600; color: var(--text); flex: 1; }
+        .topbar-user { font-size: 0.85rem; color: var(--text-sub); }
+ 
+        /* ===== PAGE ===== */
+        .page { display: none; padding: 20px; }
+        .page.active { display: block; }
+        .page-header { margin-bottom: 20px; }
+        .page-title { font-size: 1.3rem; font-weight: 700; color: var(--text); }
+        .page-sub { font-size: 0.85rem; color: var(--text-sub); margin-top: 4px; }
+ 
+        /* ===== CARDS ===== */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+            padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .card-label { font-size: 0.78rem; color: var(--text-sub); font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .card-value { font-size: 1.7rem; font-weight: 700; color: var(--accent); }
+        .card-sub { font-size: 0.78rem; color: var(--text-sub); margin-top: 4px; }
+        .card-trend { font-size: 0.78rem; font-weight: 600; padding: 2px 7px; border-radius: 10px; background: #d1fae5; color: #065f46; display: inline-block; margin-top: 4px; }
+ 
+        /* ===== CHARTS ===== */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .chart-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+        .chart-title { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 14px; display:flex; align-items:center; gap:6px; }
+        .chart-wrap { position: relative; height: 200px; }
+ 
+        /* ===== DASHBOARD LAYOUT ===== */
+        .dash-top { display:grid; grid-template-columns: repeat(4,1fr); gap:14px; margin-bottom:16px; }
+        .dash-kpi-card {
+            background: var(--card-bg); border:1px solid var(--border); border-radius:12px;
+            padding:16px 18px; display:flex; flex-direction:column; gap:4px;
+            border-left: 4px solid transparent; transition: box-shadow 0.15s;
+        }
+        .dash-kpi-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .dash-kpi-card.blue  { border-left-color: #3b82f6; }
+        .dash-kpi-card.green { border-left-color: #10b981; }
+        .dash-kpi-card.amber { border-left-color: #f59e0b; }
+        .dash-kpi-card.purple{ border-left-color: #8b5cf6; }
+        .dash-kpi-card.rose  { border-left-color: #f43f5e; }
+        .dash-kpi-card.cyan  { border-left-color: #06b6d4; }
+        .dkc-label { font-size:0.75rem; font-weight:600; color:var(--text-sub); text-transform:uppercase; letter-spacing:0.04em; }
+        .dkc-value { font-size:1.6rem; font-weight:800; color:var(--text); line-height:1.1; }
+        .dkc-sub   { font-size:0.75rem; color:var(--text-sub); }
+        .dkc-badge { display:inline-flex; align-items:center; gap:3px; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:10px; margin-top:2px; }
+        .dkc-badge.up   { background:#d1fae5; color:#065f46; }
+        .dkc-badge.down { background:#fee2e2; color:#991b1b; }
+        .dkc-badge.neu  { background:#f1f5f9; color:#475569; }
+ 
+        /* main chart row */
+        .dash-main-row { display:grid; grid-template-columns: 2fr 1fr; gap:14px; margin-bottom:14px; }
+        .dash-main-row .chart-wrap { height:260px; }
+ 
+        /* sub chart row */
+        .dash-sub-row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+        .dash-sub-row .chart-wrap { height:200px; }
+ 
+        /* recent sales table inside dashboard */
+        .dash-recent { background:var(--card-bg); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:14px; }
+        .dash-recent-title { font-size:0.9rem; font-weight:700; margin-bottom:12px; color:var(--text); }
+        .dash-recent table { width:100%; border-collapse:collapse; }
+        .dash-recent th { font-size:0.72rem; font-weight:600; color:var(--text-sub); text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); }
+        .dash-recent td { font-size:0.8rem; padding:8px; border-bottom:1px solid #f8fafc; }
+        .dash-recent tr:last-child td { border-bottom:none; }
+ 
+        /* sparkline mini */
+        .dash-spark { display:flex; align-items:flex-end; gap:2px; height:28px; margin-top:6px; }
+        .dash-spark-bar { flex:1; background:#e0f2fe; border-radius:2px 2px 0 0; min-width:4px; transition: height 0.3s; }
+        .dash-spark-bar.active { background:#3b82f6; }
+ 
+        /* ===== INVENTORY ===== */
+        .inventory-toolbar {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+            padding: 14px 16px; margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+        }
+        .search-box {
+            flex: 1; min-width: 180px; padding: 8px 12px; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: 0.875rem; outline: none;
+        }
+        .search-box:focus { border-color: var(--primary); }
+        .filter-select {
+            padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 0.875rem; outline: none; background: white;
+        }
+        .btn {
+            padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer;
+            font-size: 0.875rem; font-weight: 600; transition: all 0.15s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+ 
+        /* ===== TABLE ===== */
+        .table-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th {
+            background: #f8fafc; padding: 10px 8px; font-size: 0.75rem; font-weight: 600;
+            color: var(--text-sub); text-align: center; white-space: nowrap; border-bottom: 1px solid var(--border);
+            cursor: pointer; user-select: none;
+        }
+        th:hover { background: #f1f5f9; }
+        td { padding: 10px 8px; font-size: 0.8rem; text-align: center; border-bottom: 1px solid #f1f5f9; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8fafc; }
+        .watch-id { font-weight: 700; color: var(--primary); }
+        .status-badge {
+            display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 600;
+        }
+        .badge-listing { background: #dbeafe; color: #1e40af; }
+        .badge-sold { background: #d1fae5; color: #065f46; }
+        .badge-stock { background: #fef3c7; color: #92400e; }
+        .badge-other { background: #f3f4f6; color: #374151; }
+        .profit-pos { color: var(--success); font-weight: 600; }
+        .profit-neg { color: var(--danger); font-weight: 600; }
+        .row-sold td { background: rgba(16,185,129,0.04); }
+ 
+        /* ===== ADD FORM ===== */
+        .add-form-wrap {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 16px; display: none;
+        }
+        .add-form-wrap.open { display: block; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+        .form-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--text-sub); margin-bottom: 5px; }
+        .form-field input, .form-field select {
+            width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 7px;
+            font-size: 0.85rem; outline: none; transition: border-color 0.15s; background: white;
+        }
+        .form-field input:focus, .form-field select:focus { border-color: var(--primary); }
+        .form-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+ 
+        /* ===== KPI ===== */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .kpi-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .kpi-title { font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-bottom: 12px; }
+        .kpi-value { font-size: 1.6rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .kpi-goal { font-size: 0.8rem; color: var(--text-sub); margin-bottom: 10px; }
+        .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.5s ease; }
+        .progress-pct { font-size: 0.78rem; color: var(--text-sub); margin-top: 4px; text-align: right; }
+ 
+        /* ===== SETTINGS ===== */
+        .settings-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+        .settings-title { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+        .setting-field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+        .setting-field input, .setting-field select {
+            width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 7px;
+            font-size: 0.875rem; outline: none; transition: border-color 0.15s;
+        }
+        .setting-field input:focus, .setting-field select:focus { border-color: var(--primary); }
+        .brand-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+        .brand-tag {
+            background: #eff6ff; color: var(--primary); padding: 4px 10px; border-radius: 12px;
+            font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 5px;
+        }
+        .brand-tag button { background: none; border: none; cursor: pointer; color: #93c5fd; font-size: 0.85rem; padding: 0; }
+        .brand-tag button:hover { color: var(--danger); }
+        .btn-save { background: var(--primary); color: white; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.875rem; }
+        .btn-save:hover { background: var(--primary-dark); }
+ 
+        /* ===== NOTES ===== */
+        .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        .note-card {
+            border-radius: 10px; padding: 14px; position: relative; min-height: 120px;
+        }
+        .note-card textarea {
+            width: 100%; background: none; border: none; outline: none; font-size: 0.85rem;
+            resize: none; min-height: 80px; font-family: inherit; color: var(--text);
+        }
+        .note-card .note-del {
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.1); border: none;
+            border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; justify-content: center;
+        }
+        .note-colors { display: flex; gap: 6px; margin-bottom: 12px; }
+        .note-color-btn { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.15s; }
+        .note-color-btn:hover { transform: scale(1.2); }
+ 
+        /* ===== EBAY MODAL ===== */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: white; border-radius: 14px; padding: 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+        .modal-field { margin-bottom: 14px; }
+        .modal-field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+        .modal-field input, .modal-field textarea, .modal-field select {
+            width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 7px;
+            font-size: 0.875rem; outline: none; transition: border-color 0.15s;
+        }
+        .modal-field textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+        .modal-field input:focus, .modal-field textarea:focus { border-color: var(--primary); }
+        .modal-info { background: #eff6ff; border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; color: #1e40af; margin-bottom: 14px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+ 
+        /* ===== CONNECTION ===== */
+        .connection-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; margin-right: 5px; }
+        .connection-dot.offline { background: var(--danger); }
+ 
+        /* ===== MOBILE ===== */
+        @media (max-width: 768px) {
+            :root { --sidebar-width: 240px; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; width: var(--sidebar-width) !important; }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0 !important; }
+            .topbar-hamburger { display: flex; align-items: center; }
+            .toggle-btn { display: none; }
+            .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .card-value { font-size: 1.4rem; }
+            .page { padding: 12px; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .dash-top { grid-template-columns: repeat(2,1fr); gap:10px; }
+            .dash-main-row { grid-template-columns: 1fr; }
+            .dash-sub-row { grid-template-columns: 1fr; }
+            .dkc-value { font-size:1.3rem; }
+            .form-grid { grid-template-columns: repeat(2, 1fr); }
+            table { min-width: 700px; }
+            .kpi-grid { grid-template-columns: 1fr; }
+            .inventory-toolbar { gap: 8px; }
+            .search-box { min-width: 140px; }
+        }
+        @media (max-width: 480px) {
+            .cards-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-grid { grid-template-columns: 1fr; }
+            .notes-grid { grid-template-columns: 1fr; }
+        }
+ 
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white;
+            padding: 12px 18px; border-radius: 10px; font-size: 0.875rem; z-index: 9999;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0;
+            transition: all 0.3s ease; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+    </style>
 </head>
 <body>
-
-<header>
-  <div class="logo">TOKEI POST <span>@chirutta</span></div>
-  <div class="hd-status">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText">稼働中</span>
-  </div>
-</header>
-
-<nav>
-  <button class="tab active" onclick="switchTab('post')">投稿</button>
-  <button class="tab" onclick="switchTab('learn')">📚 学習</button>
-  <button class="tab" onclick="switchTab('dashboard')">ダッシュボード</button>
-  <button class="tab" onclick="switchTab('history')">履歴</button>
-  <button class="tab" onclick="switchTab('settings')">設定</button>
-</nav>
-
-<main>
-
-<!-- ══ 投稿（メイン画面）══ -->
-<div class="section active" id="tab-post">
-
-  <div class="card">
-    <div class="card-title">スレッド生成・投稿</div>
-
-    <!-- タイプ選択 -->
-    <div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap">
-      <button class="btn btn-sm" id="typeBtn-random" onclick="setType('random')"
-        style="background:rgba(201,168,76,.15);border:1px solid var(--gold-d);color:var(--gold);font-size:11px">
-        🎲 ランダム
-      </button>
-      <button class="btn btn-sm btn-outline" id="typeBtn-arbitrage" onclick="setType('arbitrage')">相場</button>
-      <button class="btn btn-sm btn-outline" id="typeBtn-education" onclick="setType('education')">教育</button>
-      <button class="btn btn-sm btn-outline" id="typeBtn-question" onclick="setType('question')">問いかけ</button>
-    </div>
-
-    <!-- スレッドプレビュー -->
-    <div id="threadPreview" style="margin-bottom:14px">
-      <div style="text-align:center;padding:32px;color:var(--dim);font-size:12px">
-        「生成」を押してスレッドを作成
-      </div>
-    </div>
-
-    <!-- 画像添付エリア -->
-    <div id="imageArea" style="margin-bottom:12px">
-      <div style="font-size:10px;letter-spacing:.15em;color:var(--dim);margin-bottom:7px">📎 画像添付（任意）</div>
-      <label id="imageLabel" style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--black-3);border:1px dashed var(--border-h);border-radius:3px;cursor:pointer;transition:border-color .2s">
-        <span style="font-size:18px">🖼</span>
-        <div>
-          <div style="font-size:12px;color:var(--white)">タップして画像を選択</div>
-          <div style="font-size:10px;color:var(--dim);margin-top:2px">JPG / PNG / GIF / WEBP — 5MB以下</div>
+ 
+<!-- ===== ログイン画面 ===== -->
+<div id="login-screen">
+ 
+    <!-- ── メイン：ログインのみ ── -->
+    <div class="login-box" id="panel-login">
+        <div class="login-logo">
+            <div class="logo-icon">⌚</div>
+            <h1 id="login-tool-name">Watch OS</h1>
+            <p>時計物販管理システム</p>
         </div>
-        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="onImageSelect(this)">
-      </label>
-      <!-- プレビュー＋黒帯ドラッグ -->
-      <div id="imagePreview" style="display:none;margin-top:8px">
-
-        <!-- ヘルプテキスト -->
-        <div id="maskHelp" style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">
-          📌 黒帯をドラッグで移動、下端をドラッグで縦幅変更できます
+        <div class="login-field">
+            <label>メールアドレス</label>
+            <input type="email" id="login-email" placeholder="example@email.com" autocomplete="email">
         </div>
-
-        <!-- 画像＋黒帯オーバーレイ -->
-        <div id="imgWrap" style="position:relative;border-radius:3px;overflow:hidden;border:1px solid var(--border);touch-action:none">
-          <img id="previewImg" style="width:100%;display:block;user-select:none;-webkit-user-drag:none">
-
-          <!-- 黒帯オーバーレイ -->
-          <div id="maskBand" style="display:none;position:absolute;left:0;width:100%;background:rgba(0,0,0,0.85);pointer-events:none;box-sizing:border-box;border-top:2px solid #c9a84c;border-bottom:2px solid #c9a84c">
-            <div style="text-align:center;padding:3px 0;font-size:9px;color:#555">■ 黒塗り範囲</div>
-          </div>
-
-          <!-- 削除ボタン -->
-          <button onclick="removeImage()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.75);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;z-index:20">✕</button>
+        <div class="login-field">
+            <label>パスワード</label>
+            <input type="password" id="login-password" placeholder="パスワード" autocomplete="current-password">
         </div>
-
-        <!-- 黒帯コントロール -->
-        <div style="margin-top:8px">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:8px">
-            <input type="checkbox" id="maskEnabled" style="accent-color:#c9a84c;width:15px;height:15px;flex-shrink:0" onchange="toggleMaskBand(this.checked)">
-            <span style="font-size:11px;color:var(--dim)">🖊 黒帯で隠す</span>
-          </label>
-          <div id="maskControls" style="display:none;padding:10px 12px;background:var(--black-3);border:1px solid var(--border);border-radius:3px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <span style="font-size:10px;color:#aaa;width:36px;flex-shrink:0">位置</span>
-              <input type="range" id="sliderPos" min="0" max="85" value="30" step="1"
-                style="flex:1;accent-color:#c9a84c" oninput="onMaskSlider()">
-              <span id="sliderPosVal" style="font-size:10px;color:var(--gold);width:30px;text-align:right;flex-shrink:0">30%</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-              <span style="font-size:10px;color:#aaa;width:36px;flex-shrink:0">縦幅</span>
-              <input type="range" id="sliderH" min="5" max="60" value="15" step="1"
-                style="flex:1;accent-color:#c9a84c" oninput="onMaskSlider()">
-              <span id="sliderHVal" style="font-size:10px;color:var(--gold);width:30px;text-align:right;flex-shrink:0">15%</span>
-            </div>
-            <div id="maskInfoText" style="font-size:10px;color:#aaa;margin-bottom:10px;text-align:center"></div>
-            <button onclick="confirmMask()" style="width:100%;padding:9px;background:#c9a84c;color:#000;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer">✅ この黒塗りで確定</button>
-          </div>
-          <div id="maskConfirmed" style="display:none;margin-top:5px;font-size:11px;color:var(--gold);padding:5px 8px;background:rgba(201,168,76,.1);border-radius:3px">
-            ✅ <span id="maskConfirmedText"></span>　← AI生成時に除外されます
-          </div>
-        </div>
-
-        <div id="uploadStatus" style="margin-top:5px;font-size:10px;color:var(--dim)"></div>
-      </div>
-      <!-- 画像から文章生成モード -->
-      <div id="imgAnalyzeArea" style="display:none;margin-top:10px;padding:13px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.35);border-radius:3px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:11px">
-          <input type="checkbox" id="imgAnalyzeMode" style="accent-color:#7c3aed;width:15px;height:15px" onchange="document.getElementById('buyPriceRow').style.display=this.checked?'block':'none'">
-          <div>
-            <div style="font-size:12px;color:#c4b5fd;font-weight:600">📷 この画像から投稿文を生成する</div>
-            <div style="font-size:10px;color:var(--dim);margin-top:2px">メルカリ・ヤフオクのスクショを読み取って自動で文章を考えます</div>
-          </div>
-        </label>
-        <div id="buyPriceRow" style="display:none">
-          <div style="font-size:10px;color:#c4b5fd;margin-bottom:5px;letter-spacing:.1em">💰 仕入れ額（円）</div>
-          <input type="number" id="buyPriceInput" placeholder="例: 15000"
-            style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(124,58,237,.5);color:var(--white);padding:9px 12px;border-radius:3px;font-size:14px;outline:none;font-family:var(--font-m)">
-          <div style="font-size:10px;color:var(--dim);margin-top:4px">手数料（メルカリ10%＋送料200円）は自動で差し引きます</div>
-        </div>
-      </div>
+        <button class="login-btn" id="login-btn" onclick="doLogin()">ログイン</button>
+        <div class="login-error" id="login-error"></div>
+        <button onclick="switchLoginTab('register')" style="width:100%;margin-top:12px;padding:12px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:0.9rem;font-weight:600;color:var(--text-sub);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-sub)'">アカウント作成</button>
     </div>
-
-    <!-- アクションバー -->
-    <div class="post-action">
-      <button class="btn btn-outline" onclick="generateThread()" id="genBtn">
-        ↻ テンプレ生成
-      </button>
-      <button class="btn" onclick="generateAI()" id="aiBtn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:9px 14px;border-radius:3px;font-size:11px;letter-spacing:.1em;cursor:pointer">
-        ✨ AI生成
-      </button>
-      <button class="btn btn-post" onclick="confirmPost()" id="postBtn" disabled>
-        X に投稿する
-      </button>
-    </div>
-
-    <!-- DRY RUN 表示 -->
-    <div id="dryRunBadge" style="display:none;margin-top:10px;padding:8px 12px;background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.3);border-radius:3px;font-size:11px;color:#e74c3c">
-      ⚠ DRY RUN モード — 実際には投稿されません
-    </div>
-  </div>
-
-</div>
-
-<!-- ══ ダッシュボード ══ -->
-<div class="section" id="tab-dashboard">
-
-  <div class="next-banner" id="nextBanner">
-    <div>
-      <div class="nb-label">NEXT POST</div>
-      <div class="nb-time" id="nextTime">--:--</div>
-    </div>
-    <div class="nb-in" id="nextIn">計算中...</div>
-  </div>
-
-  <div class="stat-grid">
-    <div class="stat-box"><div class="stat-num" id="stToday">0</div><div class="stat-label">TODAY</div></div>
-    <div class="stat-box"><div class="stat-num" id="stTotal">0</div><div class="stat-label">TOTAL</div></div>
-    <div class="stat-box"><div class="stat-num" id="stWatches">—</div><div class="stat-label">WATCHES</div></div>
-    <div class="stat-box"><div class="stat-num" id="stStreak">0</div><div class="stat-label">STREAK</div></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">投稿タイプ比率</div>
-    <div class="prog-row">
-      <div class="prog-label"><span>相場投稿</span><span id="rArb" style="color:var(--gold);font-family:var(--font-m)">50%</span></div>
-      <div class="prog-bar"><div class="prog-fill" id="bArb" style="width:50%"></div></div>
-    </div>
-    <div class="prog-row">
-      <div class="prog-label"><span>教育系</span><span id="rEdu" style="color:var(--gold);font-family:var(--font-m)">30%</span></div>
-      <div class="prog-bar"><div class="prog-fill" id="bEdu" style="width:30%"></div></div>
-    </div>
-    <div class="prog-row">
-      <div class="prog-label"><span>問いかけ</span><span id="rQst" style="color:var(--gold);font-family:var(--font-m)">20%</span></div>
-      <div class="prog-bar"><div class="prog-fill" id="bQst" style="width:20%"></div></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">今日のスケジュール</div>
-    <div id="todaySchedule"></div>
-  </div>
-
-</div>
-
-<!-- ══ 履歴 ══ -->
-<div class="section" id="tab-history">
-  <div class="card">
-    <div class="card-title">投稿履歴</div>
-    <div id="historyList"></div>
-  </div>
-</div>
-
-<!-- ══ 学習データ ══ -->
-<div class="section" id="tab-learn">
-
-  <div class="card">
-    <div class="card-title">📚 参考文章を学習させる</div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:14px;line-height:1.6">
-      参考アカウントの投稿をコピペして登録してください。<br>
-      「✨ AI生成」ボタンを押すと、登録した文体を学習して<br>毎回新しい投稿文を自動で考えます。
-    </div>
-
-    <!-- 追加フォーム -->
-    <div style="margin-bottom:14px">
-      <input id="sampleLabel" placeholder="ラベル（例：相場投稿・教育系）"
-        style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid var(--border);color:var(--white);padding:9px 12px;border-radius:3px;font-size:12px;margin-bottom:8px;outline:none">
-      <textarea id="sampleText" rows="7" placeholder="参考にしたい投稿をここにコピペしてください&#10;&#10;複数の投稿をまとめて貼ってもOKです😊"
-        style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid var(--border);color:var(--white);padding:9px 12px;border-radius:3px;font-size:12px;resize:vertical;outline:none;font-family:inherit"></textarea>
-      <button onclick="addSample()" class="btn btn-post" style="width:100%;margin-top:8px">
-        ＋ 登録する
-      </button>
-    </div>
-
-    <!-- 登録済み一覧 -->
-    <div style="font-size:10px;letter-spacing:.15em;color:var(--dim);margin-bottom:10px">登録済み参考文章</div>
-    <div id="sampleList">
-      <div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">
-        まだ登録されていません
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">✨ AI生成について</div>
-    <div style="font-size:11px;color:var(--dim);line-height:1.8">
-      <div>📌 参考文章を3〜5件登録すると精度が上がります</div>
-      <div>📌 参考文章が0件の場合はテンプレートで生成します</div>
-      <div>📌 AI生成はClaude APIを使用します（1回約1〜2円）</div>
-      <div>📌 毎回異なる内容が生成されます</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ══ 設定 ══ -->
-<div class="section" id="tab-settings">
-
-  <div class="card" style="border-color:rgba(66,133,244,.4)">
-    <div class="card-title" style="color:#4285f4">✨ AI生成キー（Gemini・無料）</div>
-    <p style="font-size:11px;color:var(--dim);margin-bottom:10px;line-height:1.6">
-      無料で使えます。<a href="https://aistudio.google.com/apikey" target="_blank" style="color:#4285f4">aistudio.google.com/apikey</a> で取得してください。
-    </p>
-    <input type="password" id="anthropicKeyInput"
-      placeholder="AIza..."
-      style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(66,133,244,.4);color:var(--white);padding:10px 12px;border-radius:3px;font-size:13px;margin-bottom:8px;font-family:monospace"
-      oninput="saveApiKey(this.value)">
-    <div id="apiKeyStatus" style="font-size:10px;color:var(--dim)">未入力</div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">投稿コントロール</div>
-    <div class="toggle-row">
-      <div class="toggle-info"><strong>DRY RUN モード</strong><small>ONで生成のみ、実際には投稿しない</small></div>
-      <label class="toggle"><input type="checkbox" id="tDryRun" onchange="toggleDryRun(this)"><div class="toggle-slider"></div></label>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">投稿スケジュール</div>
-    <p style="font-size:11px;color:var(--dim);margin-bottom:12px">タップで有効/無効</p>
-    <div class="schedule-grid" id="scheduleGrid"></div>
-    <div class="divider"></div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:8px">1日の最大投稿数</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-outline btn-sm" onclick="adjMax(-1)">－</button>
-      <div style="flex:1;text-align:center;font-family:var(--font-m);font-size:18px;color:var(--gold)" id="maxNum">5</div>
-      <button class="btn btn-outline btn-sm" onclick="adjMax(1)">＋</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">投稿タイプ比率</div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:14px">合計が100になるよう設定</div>
-    <div style="margin-bottom:12px">
-      <div class="prog-label"><span style="color:var(--white)">相場投稿</span><span style="color:var(--gold);font-family:var(--font-m)" id="sv-arb">50%</span></div>
-      <input type="range" min="0" max="100" value="50" id="sl-arb" oninput="onRatio()">
-    </div>
-    <div style="margin-bottom:12px">
-      <div class="prog-label"><span style="color:var(--white)">教育系</span><span style="color:var(--gold);font-family:var(--font-m)" id="sv-edu">30%</span></div>
-      <input type="range" min="0" max="100" value="30" id="sl-edu" oninput="onRatio()">
-    </div>
-    <div style="margin-bottom:12px">
-      <div class="prog-label"><span style="color:var(--white)">問いかけ</span><span style="color:var(--gold);font-family:var(--font-m)" id="sv-qst">20%</span></div>
-      <input type="range" min="0" max="100" value="20" id="sl-qst" oninput="onRatio()">
-    </div>
-    <div id="ratioWarn" style="display:none;font-size:11px;color:var(--red);margin-bottom:8px">⚠ 合計を100にしてください</div>
-    <button class="btn btn-gold btn-sm btn-full" onclick="saveRatio()">保存</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">API サーバー</div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">ローカルサーバーが起動していれば自動接続します</div>
-    <div style="background:var(--black-3);border:1px solid var(--border);border-radius:3px;padding:11px;font-family:var(--font-m);font-size:11px;line-height:2;color:var(--dim)">
-      URL: <span style="color:var(--gold)" id="apiUrl">http://localhost:5000</span><br>
-      状態: <span id="apiStatusText" style="color:var(--dim)">確認中...</span>
-    </div>
-    <button class="btn btn-outline btn-sm btn-full" style="margin-top:10px" onclick="checkApiStatus()">🔌 接続確認</button>
-  </div>
-
-</div>
-
-</main>
-
-<!-- ══ MODAL: 時計追加 ══ -->
-<div class="modal-overlay" id="modalAddWatch" onclick="closeModal('modalAddWatch')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <div class="modal-title">時計データを追加</div>
-      <button class="modal-close" onclick="closeModal('modalAddWatch')">✕</button>
-    </div>
-    <div class="form-group"><label class="form-label">ブランド</label><input class="form-input" id="wBrand" placeholder="SEIKO"></div>
-    <div class="form-group"><label class="form-label">モデル名</label><input class="form-input" id="wModel" placeholder="ソーラー電波"></div>
-    <div class="form-group"><label class="form-label">型番</label><input class="form-input" id="wNum" placeholder="7B24-0AW0"></div>
-    <div class="form-row" style="margin-bottom:9px">
-      <div class="form-group" style="margin:0"><label class="form-label">仕入れ元</label>
-        <select class="form-select" id="wBuyP"><option>ヤフオク</option><option>メルカリ</option><option>eBay</option><option>ジモティー</option><option>その他</option></select></div>
-      <div class="form-group" style="margin:0"><label class="form-label">仕入れ価格（円）</label><input class="form-input" id="wBuyPrice" type="number" placeholder="18000" oninput="calcProfit()"></div>
-    </div>
-    <div class="form-row" style="margin-bottom:9px">
-      <div class="form-group" style="margin:0"><label class="form-label">販売先</label>
-        <select class="form-select" id="wSellP"><option>メルカリ</option><option>ヤフオク</option><option>eBay</option><option>PayPayフリマ</option></select></div>
-      <div class="form-group" style="margin:0"><label class="form-label">販売価格（円）</label><input class="form-input" id="wSellPrice" type="number" placeholder="27800" oninput="calcProfit()"></div>
-    </div>
-    <div class="profit-preview" id="profitPreview">
-      <div class="profit-row"><span style="color:var(--dim)">粗利</span><span style="color:var(--gold);font-family:var(--font-m)" id="ppGross">—</span></div>
-      <div class="profit-row"><span style="color:var(--dim)">実利（概算）</span><span style="color:var(--gold-l);font-family:var(--font-m)" id="ppNet">—</span></div>
-      <div class="profit-row"><span style="color:var(--dim)">ROI</span><span style="color:var(--gold-l);font-family:var(--font-m)" id="ppRoi">—</span></div>
-    </div>
-    <div class="form-group"><label class="form-label">コンディション</label>
-      <select class="form-select" id="wCond"><option>美品</option><option>良品</option><option>訳あり</option></select></div>
-    <div class="form-group"><label class="form-label">コメント（投稿末尾のひとこと）</label>
-      <textarea class="form-textarea" id="wComment" placeholder="電波ソーラーは回転が速い。"></textarea></div>
-    <button class="btn btn-gold btn-full" onclick="addWatch()">追加する</button>
-  </div>
-</div>
-
-<!-- ══ MODAL: 投稿確認 ══ -->
-<div class="modal-overlay" id="modalConfirm" onclick="closeModal('modalConfirm')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <div class="modal-title">投稿確認</div>
-      <button class="modal-close" onclick="closeModal('modalConfirm')">✕</button>
-    </div>
-    <p style="font-size:11px;color:var(--dim);margin-bottom:14px">
-      このスレッドを @chirutta として投稿します。<br>投稿後は取り消せません。
-    </p>
-    <div id="confirmImagePreview" style="display:none;margin-bottom:10px">
-      <img id="confirmImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:3px;border:1px solid var(--border)">
-      <div style="font-size:10px;color:var(--gold);margin-top:4px;font-family:var(--font-m)">📎 画像1枚添付</div>
-    </div>
-    <div id="confirmThreadPreview" style="margin-bottom:16px"></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-outline" style="flex:1" onclick="closeModal('modalConfirm')">キャンセル</button>
-      <button class="btn btn-post" style="flex:1.5" id="execPostBtn" onclick="executePost()">投稿する</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-// ════════════════════════════
-// IMAGE STATE
-// ════════════════════════════
-const imgState = {
-  file: null,
-  mediaId: null,
-  uploaded: false,
-};
-
-function onImageSelect(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { showToast('5MB以下の画像を選んでください'); return; }
-
-  imgState.file = file;
-  imgState.mediaId = null;
-  imgState.uploaded = false;
-
-  // プレビュー表示
-  const reader = new FileReader();
-  reader.onload = e => {
-    const dataURL = e.target.result;
-    imgState.dataURL = dataURL;
-
-    const imgEl = document.getElementById('previewImg');
-    imgEl.src = dataURL;
-    document.getElementById('imagePreview').style.display = 'block';
-    document.getElementById('uploadStatus').textContent = '';
-    document.getElementById('imgAnalyzeArea').style.display = 'block';
-    // スライダーリセット
-    // 黒帯リセット
-    ['maskEnabled'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
-    ['maskBand','maskControls','maskConfirmed'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-    imgState.maskTop = 0;
-    imgState.maskBot = 0;
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeImage() {
-  imgState.file = null;
-  imgState.mediaId = null;
-  imgState.uploaded = false;
-  imgState.dataURL = null;
-  imgState.maskTop = 0;
-  imgState.maskBot = 0;
-  ['maskEnabled'].forEach(id => { const el = document.getElementById(id); if(el) el.checked = false; });
-  ['maskBand','maskControls','maskConfirmed'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-  document.getElementById('imageInput').value = '';
-  document.getElementById('imagePreview').style.display = 'none';
-  document.getElementById('imgAnalyzeArea').style.display = 'none';
-  document.getElementById('imgAnalyzeMode').checked = false;
-  if(document.getElementById('buyPriceInput')) document.getElementById('buyPriceInput').value = '';
-  if(document.getElementById('buyPriceRow')) document.getElementById('buyPriceRow').style.display = 'none';
-  const overlay = document.getElementById('maskOverlay');
-  if(overlay) overlay.style.display = 'none';
-}
-
-async function uploadImageIfNeeded() {
-  if (!imgState.file || imgState.uploaded) return;
-  const statusEl = document.getElementById('uploadStatus');
-  statusEl.textContent = '⏫ X にアップロード中...';
-
-  const formData = new FormData();
-  formData.append('image', imgState.file);
-
-  try {
-    const res = await fetch(API_BASE + '/upload_image', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (data.media_id) {
-      imgState.mediaId = data.media_id;
-      imgState.uploaded = true;
-      statusEl.textContent = data.dry_run ? '🧪 DRY RUN — アップロードスキップ' : '✅ アップロード完了';
-      statusEl.style.color = 'var(--green)';
-    } else {
-      statusEl.textContent = '❌ ' + (data.error || 'アップロード失敗');
-      statusEl.style.color = 'var(--red)';
-    }
-  } catch(e) {
-    statusEl.textContent = '❌ サーバーに接続できません';
-    statusEl.style.color = 'var(--red)';
-  }
-}
-
-// ════════════════════════════
-// CONFIG
-// ════════════════════════════
-// Renderデプロイ時は自動でそのURLを使う、ローカルはlocalhost
-const API_BASE = (location.protocol === 'file:' || location.hostname === 'localhost')
-  ? "http://localhost:5000/api"
-  : location.origin + "/api";
-
-// AnthropicキーをlocalStorageに保存・読み込み
-function saveApiKey(val) {
-  val = val.trim();
-  try { localStorage.setItem('anthropic_key', val); } catch(e) {}
-  const el = document.getElementById('apiKeyStatus');
-  if (!el) return;
-  if (val.startsWith('AIza') && val.length > 20) {
-    el.textContent = '✅ 有効なGeminiキーです';
-    el.style.color = 'var(--green)';
-  } else if (val.length > 0) {
-    el.textContent = '⚠ AIza で始まるキーを入力してください';
-    el.style.color = 'var(--red)';
-  } else {
-    el.textContent = '未入力';
-    el.style.color = 'var(--dim)';
-  }
-}
-
-function getApiKey() {
-  try { return localStorage.getItem('anthropic_key') || ''; } catch(e) { return ''; }
-}
-
-const state = {
-  selectedType: "random",
-  currentThread: null,    // { type, tweets, count }
-  watches: [],
-  history: [],
-  schedules: [
-    {time:"08:00",label:"朝",active:true},
-    {time:"12:00",label:"昼",active:true},
-    {time:"18:00",label:"夕",active:true},
-    {time:"22:00",label:"夜",active:true},
-  ],
-  maxPosts: 5,
-  ratio: {arb:50, edu:30, qst:20},
-  dryRun: false,
-  apiConnected: false,
-};
-
-// ════════════════════════════
-// TAB
-// ════════════════════════════
-function switchTab(id) {
-  // タブボタンのアクティブ状態
-  document.querySelectorAll(".tab").forEach(t => {
-    const tabId = t.getAttribute("onclick").match(/'(\w+)'/)[1];
-    t.classList.toggle("active", tabId === id);
-  });
-  // タブコンテンツの表示切り替え
-  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
-  const target = document.getElementById("tab-" + id);
-  if (target) target.classList.add("active");
-  // タブ別の初期化処理
-  if (id === "history")   loadHistory();
-  if (id === "dashboard") updateDashboard();
-  if (id === "learn")     loadSamples();
-}
-
-// ════════════════════════════
-// API HELPERS
-// ════════════════════════════
-async function apiFetch(path, opts={}) {
-  try {
-    const r = await fetch(API_BASE+path, {
-      headers: {"Content-Type":"application/json"},
-      ...opts
-    });
-    return await r.json();
-  } catch(e) {
-    return null;
-  }
-}
-
-async function checkApiStatus() {
-  const data = await apiFetch("/status");
-  const el = document.getElementById("apiStatusText");
-  if(data) {
-    state.apiConnected = true;
-    state.dryRun = data.dry_run;
-    document.getElementById("tDryRun").checked = data.dry_run;
-    updateDryRunBadge();
-    el.textContent = "✅ 接続中";
-    el.style.color = "var(--green)";
-    if(data.watches_count) document.getElementById("stWatches").textContent = data.watches_count;
-    showToast("APIサーバーに接続しました");
-  } else {
-    state.apiConnected = false;
-    el.textContent = "❌ 未接続（サーバーを起動してください）";
-    el.style.color = "var(--red)";
-  }
-}
-
-// ════════════════════════════
-// THREAD GENERATION
-// ════════════════════════════
-function setType(t) {
-  state.selectedType = t;
-  document.querySelectorAll("[id^='typeBtn-']").forEach(b=>{
-    b.style.background = "transparent";
-    b.style.color = "var(--dim)";
-    b.style.border = "1px solid var(--border-h)";
-  });
-  const active = document.getElementById("typeBtn-"+t);
-  active.style.background = "rgba(201,168,76,.15)";
-  active.style.color = "var(--gold)";
-  active.style.border = "1px solid var(--gold-d)";
-}
-
-function generateThread() {
-  // 常にローカルのテンプレートから生成（サーバー不要）
-  state.currentThread = localGenerate(state.selectedType);
-  renderThreadPreview(state.currentThread.tweets, state.currentThread.type);
-  document.getElementById("postBtn").disabled = false;
-}
-
-function renderThreadPreview(tweets, type) {
-  const wrap = document.getElementById("threadPreview");
-  if(!tweets||!tweets.length){ wrap.innerHTML='<div style="text-align:center;padding:24px;color:var(--dim);font-size:12px">スレッドがありません</div>'; return; }
-
-  const tagClass = type==="arbitrage"?"badge-arb":type==="education"?"badge-edu":"badge-qst";
-  const tagLabel = type==="arbitrage"?"相場":type==="education"?"教育":"問いかけ";
-
-  wrap.innerHTML = tweets.map((t,i)=>{
-    const charCount = t.length;
-    const over = charCount > 280;
-    return `
-      ${i>0?'<div class="thread-connector"></div>':''}
-      <div class="thread-tweet">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span class="htag ${tagClass}" style="font-size:9px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:2px">${tagLabel}</span>
-          <span class="tweet-num">${i+1} / ${tweets.length}</span>
-        </div>
-        <div class="tweet-body">${escHtml(t)}</div>
-        <div class="tweet-chars ${over?'over':''}">${charCount} / 280</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ════════════════════════════
-// POST FLOW
-// ════════════════════════════
-async function confirmPost() {
-  if(!state.currentThread) return;
-
-  // 画像がある場合は先にアップロード
-  if(imgState.file && !imgState.uploaded) {
-    await uploadImageIfNeeded();
-    if(!imgState.uploaded) { showToast('画像のアップロードに失敗しました'); return; }
-  }
-
-  // 確認モーダルにプレビューをセット
-  document.getElementById("confirmThreadPreview").innerHTML =
-    document.getElementById("threadPreview").innerHTML;
-
-  // 画像プレビューをモーダルにも表示
-  if(imgState.file) {
-    document.getElementById('confirmImg').src = document.getElementById('previewImg').src;
-    document.getElementById('confirmImagePreview').style.display = 'block';
-  } else {
-    document.getElementById('confirmImagePreview').style.display = 'none';
-  }
-
-  document.getElementById("modalConfirm").classList.add("open");
-}
-
-async function executePost() {
-  if(!state.currentThread) return;
-  const btn = document.getElementById("execPostBtn");
-  btn.textContent = "投稿中...";
-  btn.classList.add("posting");
-  btn.disabled = true;
-
-  // Renderデプロイ済みの場合はAPIを使う。未デプロイの場合はコピー用UIを表示
-  const apiBase = state.apiBase || '';
-  if (!apiBase || apiBase === 'http://localhost:5000') {
-    // Render未デプロイ → コピー用モーダルを表示
-    btn.textContent = "投稿する";
-    btn.classList.remove("posting");
-    btn.disabled = false;
-    closeModal("modalConfirm");
-    showCopyModal(state.currentThread.tweets);
-    return;
-  }
-
-  const postBody = {
-    tweets: state.currentThread.tweets,
-    type: state.currentThread.type,
-    media_ids: imgState.mediaId ? [imgState.mediaId] : [],
-  };
-  const data = await apiFetch("/post", {
-    method: "POST",
-    body: JSON.stringify(postBody)
-  });
-
-  btn.textContent = "投稿する";
-  btn.classList.remove("posting");
-  btn.disabled = false;
-  closeModal("modalConfirm");
-
-  if(data && data.status === "success") {
-    showToast(`✅ ${state.currentThread.tweets.length}件のスレッドを投稿しました`);
-    state.history.unshift({
-      post_type: state.currentThread.type,
-      content: state.currentThread.tweets[0],
-      posted_at: new Date().toLocaleString("ja-JP"),
-      status: "success",
-    });
-    removeImage();
-    state.currentThread = null;
-    document.getElementById("threadPreview").innerHTML =
-      '<div style="text-align:center;padding:32px;color:var(--dim);font-size:12px">投稿完了 — 次のスレッドを生成してください</div>';
-    document.getElementById("postBtn").disabled = true;
-  } else if(data && data.dry_run) {
-    showToast("🧪 DRY RUN 完了（実際には投稿されていません）");
-  } else {
-    const errMsg = data?.error || "投稿失敗。APIサーバーを確認してください";
-    showToast("❌ " + errMsg);
-  }
-}
-
-// ════════════════════════════
-// コピー用モーダル（Render未デプロイ時）
-// ════════════════════════════
-function showCopyModal(tweets) {
-  // 既存モーダルがあれば削除
-  const old = document.getElementById('copyModal');
-  if (old) old.remove();
-
-  const modal = document.createElement('div');
-  modal.id = 'copyModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
-
-  const inner = document.createElement('div');
-  inner.style.cssText = 'background:#1a1a1a;border:1px solid rgba(201,168,76,.3);border-radius:6px 6px 0 0;padding:20px 16px;width:100%;max-width:600px;max-height:85vh;overflow-y:auto';
-
-  inner.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:#c9a84c">📋 Xに手動投稿</div>
-      <button onclick="document.getElementById('copyModal').remove()" style="background:none;border:none;color:#9a9488;font-size:20px;cursor:pointer">×</button>
-    </div>
-    <p style="font-size:11px;color:#9a9488;margin-bottom:14px">各ツイートをコピーしてXに順番に投稿してください</p>
-    ${tweets.map((t, i) => `
-      <div style="margin-bottom:12px;padding:12px;background:#111;border:1px solid rgba(201,168,76,.2);border-radius:4px">
-        <div style="font-size:10px;color:#9a9488;margin-bottom:6px">${i+1}件目 / ${tweets.length}件</div>
-        <div style="font-size:13px;color:#f0ede6;line-height:1.6;white-space:pre-wrap">${escHtml(t)}</div>
-        <button onclick="copyTweet(${i})" id="copyBtn${i}"
-          style="margin-top:8px;width:100%;padding:8px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.4);color:#c9a84c;border-radius:3px;font-size:12px;cursor:pointer">
-          📋 コピー
+ 
+    <!-- ── アカウント作成画面（別画面） ── -->
+    <div class="login-box" id="panel-register" style="display:none;">
+ 
+        <!-- 戻るボタン -->
+        <button onclick="switchLoginTab('login')" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-sub);font-size:0.85rem;cursor:pointer;margin-bottom:16px;padding:0;">
+            ← ログインに戻る
         </button>
-      </div>
-    `).join('')}
-    <button onclick="document.getElementById('copyModal').remove();markPosted();"
-      style="width:100%;padding:12px;background:linear-gradient(135deg,#c9a84c,#7a6330);border:none;color:#fff;border-radius:3px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px">
-      ✅ 投稿完了
-    </button>
-  `;
-
-  // tweetsをモーダルに保持
-  modal._tweets = tweets;
-  modal.appendChild(inner);
-  document.body.appendChild(modal);
-}
-
-function copyTweet(i) {
-  const modal = document.getElementById('copyModal');
-  const tweets = state.currentThread?.tweets || [];
-  if (!tweets[i]) return;
-  navigator.clipboard.writeText(tweets[i]).then(() => {
-    const btn = document.getElementById('copyBtn' + i);
-    if (btn) { btn.textContent = '✅ コピー済み'; btn.style.background = 'rgba(39,174,96,.2)'; btn.style.borderColor = '#27ae60'; btn.style.color = '#27ae60'; }
-  }).catch(() => {
-    // clipboard API失敗時はselection
-    const range = document.createRange();
-    const divs = document.querySelectorAll('#copyModal .tweet-copy-text');
-    showToast('長押しでテキストをコピーしてください');
-  });
-}
-
-function markPosted() {
-  if (!state.currentThread) return;
-  state.history.unshift({
-    post_type: state.currentThread.type,
-    content: state.currentThread.tweets[0],
-    posted_at: new Date().toLocaleString("ja-JP"),
-    status: "manual",
-  });
-  removeImage();
-  state.currentThread = null;
-  document.getElementById("threadPreview").innerHTML =
-    '<div style="text-align:center;padding:32px;color:var(--dim);font-size:12px">投稿完了 — 次のスレッドを生成してください</div>';
-  document.getElementById("postBtn").disabled = true;
-  showToast("✅ 投稿履歴に記録しました");
-}
-
-function updateDryRunBadge() {
-  document.getElementById("dryRunBadge").style.display = state.dryRun ? "block" : "none";
-}
-
-// ════════════════════════════
-// LOCAL FALLBACK (API未接続時)
-// ════════════════════════════
-const LOCAL_THREADS = {arbitrage:[["時計転売で\nぶっ壊れてる時計の相場を\n最速で調べる方法、教えますね😊\n\n不動品だからってリサーチしない人、\nめちゃくちゃ多いんですよね😅\n\nこれ、すごくもったいないです。","時計を検品して動かなかった場合は\n\nヤフオクで相場検索してみてください。\n\nブランド＋型番＋「不動品」「ジャンク」\n\nこのワードで検索するだけです。\n\n例えばこんな感じ👇\n\nSEIKO 型番 不動品\nSEIKO 型番 ジャンク\n\nこれだけで\nジャンク時計の相場が一発で出てきます😳\n\nそしてここがポイント🔑\n\n0円だと思ってた時計が\n5,000円とか\n20,000円以上で売れてるんです。\n\nなぜ売れるのか？\n\n・コレクターの方\n・修理前提の方\n・業者さん\n\nこの方たちがガンガン落札してくれます👏","不動＝価値ゼロ\nこの考えは今日で捨ててください😌\n\nまずヤフオクで相場確認。\n\nこれを徹底するだけで\n利益の取りこぼしがかなり減りますよ👍\n\n今後もこの裏アカで\n時計転売の有益情報を出していくので\n通知オンしておいて👍\n\nP.S.\n時計転売に特化した\n有益情報をこのアカウントで\n定期的に発信しています。\nフォローしておいてください😊\n\n#時計物販 #副業 #転売"],["時計転売で\n月10万円を超えた時に\n変えたことをシェアします😊\n\n本数を増やしたわけじゃないんです。\n\n1本あたりの単価を上げただけ。\n\nこれだけで収入が3倍になりました🙌\n\n最初は正直、怖かったです😅\n\n「売れなかったら損が大きい…」\n\nそう思ってなかなか動けなかった。","でも実際にやってみると\n\n高単価の方がライバルが少なくて\nむしろ売りやすかったんですよね😳\n\n具体的に何をしたかというと\n\n仕入れ単価を\n5,000円帯 → 20,000円帯に上げました。\n\nここがポイント🔑\n\n安い時計はみんな仕入れようとします。\n高い時計は「怖い」と思って\n手を出さない人が多い。\n\nそこに差益があります。\n\n月3万円から月10万円に上げたい方へ。\n\n本数を増やすのは\n作業量が増えるだけです。\n\n単価を上げる方が\n同じ時間で3〜5倍稼げます😊","まずは1本だけ\nいつもより高い商品を仕入れてみてください。\n\nそれが変わるきっかけになると思います👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「高単価が怖い」という方に向けて\n次の投稿でリスク管理の方法を解説します。\n\n#時計物販 #副業 #物販"],["時計転売を\n資金3万円で始める方法を\n具体的に解説しますね😊\n\n「元手が少ないから無理…」\n\nその考え、今日で捨ててください🙌\n\n実は3万円あれば\n十分に始められるんです。\n\nしかも最初の月から\n黒字にすることができます。\n\n順番に説明しますね👇","資金3万円での動き方はこれです。\n\nステップ①\n1万円の商品を3本仕入れる\n\nステップ②\n1本あたり4,000〜5,000円の利益を出す\n\nステップ③\n利益を次の仕入れに回す\n\n3ヶ月後には\n仕入れ資金が倍近くになってます😳\n\nここがポイント🔑\n\n最初は回転数より利益率を重視すること。\n\n仕入れ1万円で手残り5,000円\n＝ 投資対効果50%\n\n銀行に預けても0.001%しか増えません笑\n\n同じお金の使い方じゃないんですよね。\n\n半年後には\n自分のお金をほぼ使わずに\n回せる状態になれます🙌","小さく始めて確実に回す。\n\nそれが最速で月10万に近づく方法です。\n\nまずは1万円だけ使って\n1本仕入れてみてください😊\n\n応援してます👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「最初の1本で何を仕入れるか」については\n次の投稿で具体的に解説します。\n\n#時計物販 #副業 #物販"],["時計転売で\nヤフオクの「終了時間」だけで\n仕入れ値が5,000〜10,000円変わる話をします🤔\n\n同じ時計でも終了時間が違うだけで\nこれだけの差が生まれるんです😳\n\n知ってる人と知らない人で\n仕入れコストが全然違ってくる。\n\nちょっと聞いていってください😊","ヤフオクで安く落とせる時間帯があります。\n\n夜22時〜24時に終了する商品です。\n\nこれが狙い目です👀\n\n理由はシンプルで\n\n・競り参加者が少ない\n・眠くてスマホを置いてる人が多い\n・急いで入札チェックする人が減る\n\nだから競合が減って\n安く落とせるんですよね😊\n\n実際に同じ商品を\n昼12時終了と夜23時終了で比べると\n\n夜の方が明らかに安く落とせることが多いです。\n\nここがポイント🔑\n\n検索条件で終了時間を夜に絞るだけ。\nそれだけで仕入れ値が変わります。\n\nもう1つ裏技があります😊\n\n「まとめ売り」で検索する方法です。\n\n複数本まとめて出品されてるものを\n1本あたりに換算すると\n割安なケースが多いんです。\n\n手間はかかりますが\n利益率が1.5〜2倍になりますよ🙌","終了時間 × まとめ売り\n\nこの2つを組み合わせるだけで\n仕入れ力が大幅にアップします👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「ヤフオクの検索フィルターの使い方」は\n次の投稿で詳しく解説します。\n\n#時計物販 #ヤフオク #副業"],["時計転売初心者が\n最初の1本で失敗する理由、\n3パターンあります😅\n\n全部、昔の自分がやってしまったことです笑\n\n同じ失敗をしてほしくないので\n正直に話しますね😊\n\n参考になれば嬉しいです。","失敗パターン①\nメルカリの相場を調べずに仕入れる。\n\n「ヤフオクで安かった！」\n\nそれだけで仕入れてしまい\n結果メルカリでも安くしか売れない商品でした😭\n\n損はしなかったけど\nほぼ利益ゼロ。\n\n失敗パターン②\nコンディションを甘く見る。\n\n「動作品」と書いてあったのに\n精度が大幅にズレてた…\n\n返品対応で時間とお金を浪費しました😢\n\n失敗パターン③\n写真を適当に撮る。\n\n売れないから値下げ。また値下げ。\n最終的に赤字で売りました。\n\n全部、知識があれば防げた失敗です。\n\nここがポイント🔑\n\nこの3つを守るだけで\n初月から黒字になれます。\n\n①メルカリの売れた実績を先に確認\n②コンディションは厳しめに評価\n③写真は自然光で7枚以上","シンプルですよね😊\n\nでも実行できてる人が少ないんです。\n\nこれを守るだけで\n他の出品者より圧倒的に有利になりますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「メルカリの相場確認の具体的な方法」は\n次の投稿で詳しく解説します。\n\n#時計物販 #副業 #物販"]],education:[["副業で稼げない人の9割は\n「まだ準備中」なんです😅\n\nこれ、他人事ではなく\n昔の自分の話です笑\n\n完璧なリサーチが終わったら始める。\nもう少し知識がついたら動く。\n資金が○万円になったら仕入れる。\n\nこの「条件付き」が曲者なんですよね🤔\n\n条件は永遠に揃いません。\n完璧な準備なんて存在しないんです。","仕入れた1本が\n1,000時間のリサーチより学びになります😳\n\nここがポイント🔑\n\n行動した人が積み上げてるもの。\n\n・失敗の経験\n・相場感覚\n・梱包・発送の速度\n・交渉の慣れ\n・リサーチのスピード\n\n全部、動かないと得られないものです。\n\n頭の中で計算してる間は\n何も変わりません。\n\n始める前の不安は\n始めた後に全部解決するんです😊\n\n知識は動いて覚える。\n資金は1万円でいい。\n時間はスキマでいい。\n\n今すでに始められる状態ですよ。","今日、1本だけ仕入れてみてください😊\n\nそれだけで3ヶ月後の自分が変わります。\n\n準備してる間に\n行動した人との差は\nどんどん広がっていきますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「最初の1本で何を仕入れるか迷ってる」\nという方はコメントで教えてください。\n一緒に考えます。\n\n#時計物販 #副業 #マインド"],["副業を始めるなら\n時計物販をおすすめする理由を話します😊\n\n5つあります。\n\nなんとなくじゃなく\nちゃんと理由があります🤔\n\nこれを読んだら\n「なぜ時計なのか」が\nスッキリわかると思います。\n\n順番に説明しますね👇","理由①\n小型で軽いから送料が安い\n→ 600〜800円で済みます😊\n→ 利益を圧迫しにくい\n\n理由②\nブランドで相場が読める\n→ SEIKOならSEIKOの相場がある\n→ リサーチが体系化できる\n\n理由③\nヤフオク×メルカリの価格差が大きい\n→ 同じ商品でも5,000〜15,000円の差がざらにある😳\n→ この差を取るだけでいい\n\n理由④\n需要が安定してる\n→ 時計は流行り廃りが少ない\n→ 急に売れなくなるリスクが低い\n\n理由⑤\n初期資金が少なくて済む\n→ 1万円から始められます🙌\n→ 失敗してもダメージが小さい\n\nこの5つが全部揃ってる副業ジャンルは\n実は少ないんですよね。\n\nここがポイント🔑\n\n再現性が飛び抜けて高いです。","「何から始めるか」で迷ってる方は\n時計から入ることをおすすめします😊\n\nまずは今日\nヤフオクとメルカリで\nSEIKO ソーラー電波を検索してみてください。\n\n価格差が見えた瞬間から\n時計物販は始まってますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\nSEIKO以外のおすすめブランドについては\n次の投稿で解説します。\n\n#時計物販 #副業 #物販"],["時計物販で\n一番稼いでる人たちの共通点、\n話します😊\n\n才能でも資金量でもないんですよ。\n\nたった1つの習慣の話です🤔\n\nこれを聞いたとき\n「そんなことか」って思うかもしれません。\n\nでもこれができてる人が\n本当に少ないんですよね。","稼いでる人の共通点はこれです。\n\n毎日相場を見てる。\n\nたったこれだけ😊\n\n具体的には\n\n・ヤフオクの落札相場を毎日確認\n・メルカリの売れた実績を毎日見る\n・気になる型番の価格変動を追う\n・新しいモデルの情報をキャッチする\n・ライバル出品者の動きを観察する\n\nこれを半年続けた人と\n続けなかった人では\n「相場感覚」が全然違います😳\n\nここがポイント🔑\n\n相場感覚は勉強して身につくものじゃないんです。\n\n毎日見続けることでしか育ちません。\n\n1日5分でいいんです😊\n\nヤフオクとメルカリを\n毎日開く習慣を作るだけ。\n\n半年後に\n「この価格は安い」が\n瞬時に判断できるようになります。\n\nその判断力が\n利益を生み続けますよ🙌","今日から始めてみてください😊\n\n習慣化するコツは\n「通勤中に開く」と決めること。\n\nそれだけで続けられます👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「相場の見方がわからない」という方向けに\n次の投稿で具体的な手順を解説します。\n\n#時計物販 #副業 #習慣"],["時計物販を\n本業しながら月10万稼ぐための\n1日のスケジュールを公開します📅\n\n「忙しいから無理」って思ってる方、\nちょっと待ってください😊\n\n実際の作業時間を見てもらえれば\n「これなら自分にもできる」ってわかります。\n\n正直に全部話しますね👇","実際の1日の作業時間はこれだけです。\n\n朝の通勤（15〜30分）\n→ ヤフオクの終了間近の商品をチェック\n→ 気になる商品をウォッチリストへ\n→ 相場の変動を確認\n\n昼休み（10分）\n→ メルカリで売れた実績を確認\n→ 入札か見送りかを判断\n→ 出品中商品のチェック\n\n夜（30〜45分）\n→ 出品中商品の価格調整\n→ 売れた商品の梱包・発送準備\n→ 新しい仕入れ候補をリスト化\n\n合計1日1時間かかりません😳\n\n週に1〜2回だけ\nコンビニに発送に行くだけです。\n\nここがポイント🔑\n\n「まとまった時間」がなくてもできます。\nスキマ時間の使い方を変えるだけ。\n\n「忙しいから無理」ではなく\nスキマ時間の使い方の問題なんです😊","本業を辞める必要はありません。\n\n今の生活のまま始められます🙌\n\nまず1週間だけ\n通勤時間にヤフオクを開いてみてください。\n\nそれだけで\n「時間がない」という言い訳が\n消えていきますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「スキマ時間でできる仕入れリサーチの具体的な方法」は\n次の投稿で解説します。\n\n#時計物販 #副業 #在宅ワーク"],["時計物販を始めて\n後悔したことが1つあります。\n\nもっと早く始めればよかった。\n\nそれだけです😊\n\n始める前に考えてたこと全部\n始めてから解決できたんですよね。\n\n「失敗したら損する」\n「知識が足りない」\n「ライバルが多そう」\n「時間がない」\n\n全部、言い訳でした😅","失敗したら → 経験になった\n知識が足りない → 動きながら覚えた\nライバルが多い → 差別化できた\n時間がない → スキマ時間で回せた\n\nここがポイント🔑\n\n始める前の不安は\n始めた後に全部解決するんです😊\n\n始めない限り何も解決しません。\n\n時計物販を始めて\n一番変わったのは\n\nお金じゃなくて\n「自分でお金を作れる」という自信です🙌\n\nその自信が次の挑戦を生みます。\n\n副業で稼ぐことは\n単純にお金が増えるだけじゃない。\n\n思考が変わる。\n行動が変わる。\n人生が変わる。\n\n大げさじゃなく、本当にそう思ってます。","今日が一番早く始められる日ですよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「始め方がわからない」という方は\nコメントで気軽に聞いてください。\n一緒に考えます。\n\n#時計物販 #副業 #マインド"]],question:[["これ仕入れますか？🤔\n\nSEIKO 電波ソーラー\nヤフオク 18,000円\n\nまず直感で\n「仕入れる」か「見送る」か\n判断してみてください。\n\n答えを決めてから\n次を読んでみてください😊\n\nどちらを選びましたか？","メルカリの直近30日の売れ実績はこれです👇\n\n27,000〜29,000円\n平均22日で売れてます。\n\n手残り計算してみましょう。\n\n販売価格 28,000円\n× メルカリ手数料10% = -2,800円\n- 送料 = -200円\n- 仕入れ = -18,000円\n────────────────\n手残り：6,600円😳\n投資対効果：36%\n\n電波ソーラーは需要が安定してるので\n回転も速いです。\n\nここがポイント🔑\n\n仕入れる理由が\n数字で説明できるかどうかです。\n\n「なんとなく安い」は危険😅\n「この根拠で仕入れる」が正解😊\n\n最初に「見送る」と答えた方へ。\n\n理由はなんですか？\n・相場を知らなかった\n・計算の仕方がわからなかった\n・なんとなく不安だった","どれかに当てはまりましたか？\n\nコメントで教えてください😊\n\n一番多い理由を\n次の投稿で詳しく解説しますね👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n「電波ソーラーを仕入れる時の\n注意点」については次の投稿で解説します。\n\n#時計物販 #副業"],["フォロワーさんに正直に聞きます😊\n\n時計物販の今の月収は\nどのくらいですか？\n\n恥ずかしいことはないので\n正直に答えてもらえると嬉しいです🙌\n\n今の自分のステージを確認することが\n次のステップへの第一歩です。\n\n4つのステージから\n選んでみてください👇","ステージ①\nまだ0円（まだ始めてない）\n→ これが一番多い気がしてます\n\nステージ②\n月〜3万円（お小遣いレベル）\n→ まずここを目指してほしい\n\nステージ③\n月3〜10万円（副収入として成立🙌）\n→ ここまで来ると楽しくなってくる\n\nステージ④\n月10万円以上（本業に近づいてきた😳）\n→ ここから仕組み化の話になる\n\nどれですか？\n\nコメントで教えてください😊\n\nどのステージの人が多いかによって\n次に発信する内容を変えます🤔\n\nステージ①が多ければ\n「最初の1本の仕入れ方」\n\nステージ②が多ければ\n「3万から10万に上げる方法」\n\nみんなの回答が\n次の投稿に繋がりますよ👍","回答してくれた方へ。\n\n全員のコメントを確認して\n次の投稿のテーマを決めます😊\n\n一緒に成長していきましょう🙌\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\nコメントで質問してもらえれば\n個別にアドバイスします。\n気軽に聞いてください👍\n\n#時計物販 #副業"],["時計物販に興味はあるけど\nまだ始めてない方に聞きます😊\n\n何が一番のハードルですか？\n\n正直に教えてほしいです🙌\n\nみなさんの回答が\n次の投稿のテーマになります。\n\n4つの選択肢から\n一番近いものを選んでください👇","よく聞くハードルTop4はこれです。\n\n1位：仕入れ資金がない💰\n→「最低いくら必要か」がわからない\n→ 実は1万円から始められます\n\n2位：相場の調べ方がわからない🤔\n→ どのサイトで何を見ればいいか\n→ ヤフオクとメルカリだけでOKです\n\n3位：騙されそうで怖い😅\n→ ジャンク品を掴まされそう\n→ チェックポイントを知れば防げます\n\n4位：時間がない⏰\n→ 本業が忙しい\n→ スキマ時間の使い方で解決できます\n\nどれが一番近いですか？\n\nコメントで教えてください😊\n\nここがポイント🔑\n\nどれも解決策があります。\n\n「無理」じゃなくて\n「知らないだけ」なんですよね。","正直に教えてもらえると\n\nそのハードルに合わせた\n「最初の一歩の踏み出し方」を\n次の投稿で具体的に書きます😊\n\nあなたの回答が\n同じ悩みを持つ方の\n背中を押すことになりますよ👍\n\n今後もこのアカウントで\n時計転売の有益情報を発信していくので\nフォロー＆通知オンしておいてください😊\n\nP.S.\n一番多かったハードルについて\n次の投稿で徹底解説します。\n\n#時計物販 #副業"]]};
-
-function localGenerate(type) {
-  const types = ["arbitrage","education","question"];
-  const weights = [state.ratio.arb, state.ratio.edu, state.ratio.qst];
-  let t = type;
-  if(t === "random") {
-    const total = weights.reduce((a,b)=>a+b,0);
-    let r = Math.random()*total, i=0;
-    for(;i<weights.length-1;i++){ r-=weights[i]; if(r<=0)break; }
-    t = types[i];
-  }
-  const pool = LOCAL_THREADS[t] || LOCAL_THREADS.education;
-  const tweets = pool[Math.floor(Math.random()*pool.length)];
-  return {type:t, tweets, count:tweets.length};
-}
-
-// ════════════════════════════
-// WATCHES
-// ════════════════════════════
-async function loadWatches() {
-  const data = await apiFetch("/watches");
-  if(data) state.watches = data;
-  renderWatches();
-}
-
-function renderWatches() {
-  const el = document.getElementById("watchList");
-  if(!state.watches.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">⌚</div><div style="font-size:12px">データがありません</div></div>'; return;
-  }
-  el.innerHTML = state.watches.map((w,i)=>`
-    <div class="watch-item">
-      <div class="watch-header">
-        <div><div class="watch-name">${w.brand} ${w.model}</div><div class="watch-num">${w.model_number}</div></div>
-        <div class="watch-profit">¥${(w.net||0).toLocaleString()}<small>実利</small></div>
-      </div>
-      <div class="watch-flow">
-        <span>${w.buy_platform}</span>
-        <span class="wprice">¥${parseInt(w.buy_price).toLocaleString()}</span>
-        <span style="color:var(--gold-d)">→</span>
-        <span>${w.sell_platform}</span>
-        <span class="wprice">¥${parseInt(w.sell_price).toLocaleString()}</span>
-        <span style="margin-left:auto;font-size:10px;color:var(--dim)">${w.condition||'良品'}</span>
-      </div>
-      <div class="watch-actions">
-        <button class="btn btn-outline btn-sm" onclick="previewWatch(${i})">スレッド生成</button>
-        <button class="btn btn-danger" onclick="deleteWatch(${i})">削除</button>
-      </div>
-    </div>
-  `).join('');
-  document.getElementById("stWatches").textContent = state.watches.length;
-}
-
-function openAddWatch(){
-  ['wBrand','wModel','wNum','wBuyPrice','wSellPrice','wComment'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('profitPreview').style.display='none';
-  document.getElementById('modalAddWatch').classList.add('open');
-}
-
-function calcProfit(){
-  const b=parseInt(document.getElementById('wBuyPrice').value)||0;
-  const s=parseInt(document.getElementById('wSellPrice').value)||0;
-  if(b&&s){
-    const net=Math.floor(s*.9-b-200);
-    const roi=Math.floor(net/b*100);
-    document.getElementById('ppGross').textContent=`¥${(s-b).toLocaleString()}`;
-    document.getElementById('ppNet').textContent=`¥${net.toLocaleString()}`;
-    document.getElementById('ppRoi').textContent=`${roi}%`;
-    document.getElementById('profitPreview').style.display='block';
-  }
-}
-
-async function addWatch(){
-  const w={
-    brand:document.getElementById('wBrand').value.trim(),
-    model:document.getElementById('wModel').value.trim(),
-    model_number:document.getElementById('wNum').value.trim(),
-    buy_platform:document.getElementById('wBuyP').value,
-    buy_price:parseInt(document.getElementById('wBuyPrice').value)||0,
-    sell_platform:document.getElementById('wSellP').value,
-    sell_price:parseInt(document.getElementById('wSellPrice').value)||0,
-    condition:document.getElementById('wCond').value,
-    comment:document.getElementById('wComment').value.trim(),
-  };
-  if(!w.brand||!w.model_number||!w.buy_price||!w.sell_price){showToast('必須項目を入力してください');return;}
-  const r = await apiFetch('/watches',{method:'POST',body:JSON.stringify(w)});
-  if(r?.status==='ok'||!state.apiConnected){
-    state.watches.push({...w, net:Math.floor(w.sell_price*.9-w.buy_price-200)});
-    renderWatches();
-    closeModal('modalAddWatch');
-    showToast(`${w.brand} ${w.model_number} を追加しました`);
-  }
-}
-
-async function deleteWatch(i){
-  if(!confirm(`${state.watches[i].brand} ${state.watches[i].model_number} を削除しますか？`))return;
-  await apiFetch(`/watches/${i}`,{method:'DELETE'});
-  state.watches.splice(i,1);
-  renderWatches();
-  showToast('削除しました');
-}
-
-function previewWatch(i){
-  const w = state.watches[i];
-  // ローカルテンプレートから生成
-  const pool = LOCAL_THREADS.arbitrage;
-  const tweets = pool[Math.floor(Math.random()*pool.length)];
-  state.currentThread = {type:'arbitrage', tweets, count:tweets.length};
-  switchTab('post');
-  renderThreadPreview(state.currentThread.tweets, 'arbitrage');
-  document.getElementById('postBtn').disabled=false;
-}
-
-// ════════════════════════════
-// HISTORY
-// ════════════════════════════
-async function loadHistory(){
-  const data = await apiFetch('/history?limit=30');
-  if(data) state.history = data;
-  renderHistory();
-}
-
-function renderHistory(){
-  const el=document.getElementById('historyList');
-  if(!state.history.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div style="font-size:12px">履歴はまだありません</div></div>'; return;
-  }
-  const tagMap={arbitrage:['badge-arb','相場'],education:['badge-edu','教育'],question:['badge-qst','問いかけ']};
-  el.innerHTML=state.history.map((h,i)=>{
-    const [tc,tl]=tagMap[h.post_type]||['badge-edu','—'];
-    const sc=h.status==='success'?'var(--green)':'var(--red)';
-    return `<div class="hist-item" onclick="toggleHist(${i},this)">
-      <div class="hist-meta">
-        <span class="htag ${tc}">${tl}</span>
-        <span style="font-size:9px;color:${sc};font-weight:700">${h.status==='success'?'投稿済':'失敗'}</span>
-        <span class="hist-time">${h.posted_at||''}</span>
-      </div>
-      <div class="hist-prev">${escHtml((h.content||'').slice(0,60))}${(h.content||'').length>60?'…':''}</div>
-    </div>`;
-  }).join('');
-}
-
-function toggleHist(i,el){
-  const p=el.querySelector('.hist-prev');
-  const full=escHtml(state.history[i].content||'');
-  if(p.dataset.expanded){
-    p.textContent=(state.history[i].content||'').slice(0,60)+'…';
-    delete p.dataset.expanded;
-  } else {
-    p.textContent='';
-    p.innerHTML=full;
-    p.style.color='var(--white)';
-    p.dataset.expanded='1';
-  }
-}
-
-// ════════════════════════════
-// DASHBOARD
-// ════════════════════════════
-function updateDashboard(){
-  const today=state.history.filter(h=>{
-    const d=new Date(h.posted_at);const n=new Date();
-    return !isNaN(d)&&d.toDateString()===n.toDateString();
-  }).length;
-  document.getElementById('stToday').textContent=today;
-  document.getElementById('stTotal').textContent=state.history.length;
-  updateNextPost();
-  renderTodaySchedule();
-}
-
-function updateNextPost(){
-  const now=new Date();
-  const active=state.schedules.filter(s=>s.active);
-  if(!active.length){document.getElementById('nextTime').textContent='--:--';return;}
-  let min=Infinity,next=null;
-  active.forEach(s=>{
-    const[h,m]=s.time.split(':').map(Number);
-    const t=new Date(now);t.setHours(h,m,0,0);
-    if(t<=now)t.setDate(t.getDate()+1);
-    const d=t-now;if(d<min){min=d;next={s,d};}
-  });
-  document.getElementById('nextTime').textContent=next.s.time;
-  const h=Math.floor(next.d/3600000),m=Math.floor((next.d%3600000)/60000);
-  document.getElementById('nextIn').textContent=`あと ${h>0?h+'時間 ':''}${m}分`;
-}
-
-function renderTodaySchedule(){
-  const now=new Date();
-  document.getElementById('todaySchedule').innerHTML=state.schedules.map(s=>{
-    const[h,m]=s.time.split(':').map(Number);
-    const t=new Date(now);t.setHours(h,m,0,0);
-    const past=t<=now&&s.active;
-    const c=!s.active?'var(--dim)':past?'var(--gold-d)':'var(--gold)';
-    const ic=!s.active?'○':past?'✓':'◆';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
-      <span style="color:${c};font-size:12px">${ic}</span>
-      <span style="font-family:var(--font-m);font-size:14px;color:${c}">${s.time}</span>
-      <span style="font-size:11px;color:var(--dim)">${s.label}の投稿</span>
-      ${past?'<span style="margin-left:auto;font-size:9px;color:var(--gold-d)">済み</span>':''}
-    </div>`;
-  }).join('');
-}
-
-// ════════════════════════════
-// SETTINGS
-// ════════════════════════════
-function renderScheduleGrid(){
-  document.getElementById('scheduleGrid').innerHTML=state.schedules.map((s,i)=>`
-    <div class="sch-time ${s.active?'active':''}" onclick="toggleSch(${i})">
-      <div class="t">${s.time}</div><div class="tl">${s.label}</div>
-    </div>
-  `).join('');
-}
-
-function toggleSch(i){
-  state.schedules[i].active=!state.schedules[i].active;
-  renderScheduleGrid();
-  showToast(`${state.schedules[i].time} を${state.schedules[i].active?'有効':'無効'}にしました`);
-}
-
-function adjMax(d){
-  state.maxPosts=Math.max(1,Math.min(10,state.maxPosts+d));
-  document.getElementById('maxNum').textContent=state.maxPosts;
-  apiFetch('/config',{method:'POST',body:JSON.stringify({max_posts:state.maxPosts})});
-}
-
-function onRatio(){
-  const a=+document.getElementById('sl-arb').value;
-  const e=+document.getElementById('sl-edu').value;
-  const q=+document.getElementById('sl-qst').value;
-  document.getElementById('sv-arb').textContent=a+'%';
-  document.getElementById('sv-edu').textContent=e+'%';
-  document.getElementById('sv-qst').textContent=q+'%';
-  document.getElementById('ratioWarn').style.display=(a+e+q!==100)?'block':'none';
-}
-
-function saveRatio(){
-  const a=+document.getElementById('sl-arb').value;
-  const e=+document.getElementById('sl-edu').value;
-  const q=+document.getElementById('sl-qst').value;
-  if(a+e+q!==100){showToast('合計を100にしてください');return;}
-  state.ratio={arb:a,edu:e,qst:q};
-  document.getElementById('rArb').textContent=a+'%';document.getElementById('bArb').style.width=a+'%';
-  document.getElementById('rEdu').textContent=e+'%';document.getElementById('bEdu').style.width=e+'%';
-  document.getElementById('rQst').textContent=q+'%';document.getElementById('bQst').style.width=q+'%';
-  apiFetch('/config',{method:'POST',body:JSON.stringify({ratio:{arb:a,edu:e,qst:q}})});
-  showToast('比率を保存しました');
-}
-
-async function toggleDryRun(el){
-  state.dryRun=el.checked;
-  updateDryRunBadge();
-  await apiFetch('/config',{method:'POST',body:JSON.stringify({dry_run:state.dryRun})});
-  showToast(state.dryRun?'DRY RUN ON — 実際には投稿しません':'DRY RUN OFF — 実投稿モード');
-}
-
-// ════════════════════════════
-// UTILS
-// ════════════════════════════
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
-}
-
-// ════════════════════════════
-// INIT
-// ════════════════════════════
-async function init(){
-  renderScheduleGrid();
-  updateDashboard();
-  setType('random');
-  await checkApiStatus();
-  setInterval(updateNextPost,60000);
-}
-document.addEventListener('DOMContentLoaded',init);
-
-// ════════════════════════════
-// 学習データ管理
-// ════════════════════════════
-async function loadSamples() {
-  try {
-    const data = await apiFetch('/samples');
-    renderSamples(data.samples || []);
-  } catch(e) {
-    // オフライン時は無視
-  }
-}
-
-function renderSamples(samples) {
-  const el = document.getElementById('sampleList');
-  if (!samples.length) {
-    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--dim);font-size:12px">まだ登録されていません</div>';
-    return;
-  }
-  el.innerHTML = samples.map(s => `
-    <div style="background:var(--black-3);border:1px solid var(--border);border-radius:3px;padding:11px 13px;margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em">${s.label}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:10px;color:var(--dim)">${s.added_at}</span>
-          <button onclick="deleteSample(${s.id})" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0">✕</button>
+ 
+        <div class="login-logo" style="margin-bottom:20px;">
+            <div class="logo-icon">⌚</div>
+            <h1 style="font-size:1.3rem;font-weight:700;color:var(--text);margin-top:6px;">アカウント作成</h1>
         </div>
-      </div>
-      <div style="font-size:11px;color:var(--white);line-height:1.6;white-space:pre-wrap;max-height:120px;overflow-y:auto">${s.text.substring(0,200)}${s.text.length>200?'…':''}</div>
+ 
+        <!-- ステップ表示 -->
+        <div class="step-indicator">
+            <div class="step-dot current" id="step1-dot">1</div>
+            <div class="step-line" id="step1-line"></div>
+            <div class="step-dot" id="step2-dot">2</div>
+            <div class="step-line" id="step2-line"></div>
+            <div class="step-dot" id="step3-dot">3</div>
+        </div>
+ 
+        <!-- STEP 1: 基本情報 -->
+        <div class="register-step active" id="reg-step1">
+            <div style="font-size:0.82rem;color:var(--text-sub);margin-bottom:14px;">情報を入力して招待コードを申請してください。</div>
+            <div class="login-field">
+                <label>メールアドレス</label>
+                <input type="email" id="reg-email" placeholder="example@email.com" autocomplete="email">
+            </div>
+            <div class="login-field">
+                <label>パスワード（8文字以上）</label>
+                <input type="password" id="reg-password" placeholder="パスワード">
+            </div>
+            <div class="login-field">
+                <label>ユーザー名（表示名）</label>
+                <input type="text" id="reg-username" placeholder="山田太郎">
+            </div>
+            <button class="login-btn" id="reg-step1-btn" onclick="submitStep1()">招待コードを申請する</button>
+            <div class="login-error" id="reg-error1"></div>
+        </div>
+ 
+        <!-- STEP 2: 招待コード入力 -->
+        <div class="register-step" id="reg-step2">
+            <div class="pending-box">
+                <div class="pending-icon">📩</div>
+                <p id="step2-pending-msg"><strong>申請を受け付けました</strong><br>管理者に通知しました。<br>招待コードが届いたら入力してください。</p>
+            </div>
+            <div class="login-field" style="margin-top:16px;">
+                <label>招待コード</label>
+                <input type="text" id="reg-invite-code" placeholder="例: AB3X7KPQ" class="code-input" maxlength="8">
+            </div>
+            <button class="login-btn" onclick="submitStep2()">コードを確認して登録する</button>
+            <div class="login-error" id="reg-error2"></div>
+        </div>
+ 
+        <!-- STEP 3: 完了 -->
+        <div class="register-step" id="reg-step3">
+            <div class="login-success-box">
+                <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">登録完了！</div>
+                <p style="font-size:0.85rem;color:var(--text-sub);">アカウントが作成されました。</p>
+            </div>
+            <button class="login-btn" onclick="switchLoginTab('login')" style="margin-top:16px;">ログインする</button>
+        </div>
+ 
     </div>
-  `).join('');
+ 
+</div>
+ 
+<!-- ===== APP ===== -->
+<div class="app">
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+ 
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <button class="toggle-btn" id="toggle-btn" onclick="toggleSidebar()">‹</button>
+        <div class="sidebar-header">
+            <span class="sidebar-logo">⌚</span>
+            <span class="sidebar-title" id="app-name-display">Watch OS</span>
+        </div>
+        <div class="sidebar-menu">
+            <button class="menu-item active" onclick="showPage('dashboard',this)">
+                <span class="menu-icon">📊</span><span class="menu-text">ダッシュボード</span>
+            </button>
+            <button class="menu-item" onclick="showPage('inventory',this)">
+                <span class="menu-icon">📦</span><span class="menu-text">在庫管理</span>
+            </button>
+            <button class="menu-item" onclick="showPage('kpi',this)">
+                <span class="menu-icon">📈</span><span class="menu-text">月間KPI</span>
+            </button>
+            <button class="menu-item" onclick="showPage('analytics',this)">
+                <span class="menu-icon">📊</span><span class="menu-text">分析レポート</span>
+            </button>
+            <button class="menu-item" onclick="showPage('notes',this)">
+                <span class="menu-icon">📝</span><span class="menu-text">メモ</span>
+            </button>
+            <button class="menu-item" onclick="showPage('settings',this)">
+                <span class="menu-icon">⚙️</span><span class="menu-text">設定</span>
+            </button>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar" id="user-avatar-text">U</div>
+                <div style="flex:1;overflow:hidden;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <div class="user-name" id="user-display-name">ユーザー</div>
+                        <span class="role-badge role-user" id="role-badge">USER</span>
+                    </div>
+                    <div class="user-role" id="user-username-sub" style="font-size:0.72rem;"></div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+        </div>
+    </nav>
+ 
+    <!-- Main -->
+    <main class="main-content" id="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <button class="topbar-hamburger" onclick="openMobileSidebar()">☰</button>
+            <span class="topbar-title" id="topbar-title">ダッシュボード</span>
+            <span style="font-size:0.75rem;color:var(--text-sub);">
+                <span class="connection-dot" id="conn-dot"></span>
+                <span id="conn-text">確認中...</span>
+            </span>
+        </div>
+ 
+        <!-- ===== DASHBOARD ===== -->
+        <div class="page active" id="page-dashboard">
+ 
+            <!-- KPIカード行 -->
+            <div class="dash-top">
+                <div class="dash-kpi-card blue">
+                    <div class="dkc-label">今月売上</div>
+                    <div class="dkc-value" id="d-sales">¥0</div>
+                    <div class="dkc-sub">今月の総売上金額</div>
+                    <div class="dash-spark" id="spark-sales"></div>
+                </div>
+                <div class="dash-kpi-card green">
+                    <div class="dkc-label">今月利益</div>
+                    <div class="dkc-value" id="d-profit">¥0</div>
+                    <div class="dkc-sub">手数料・コスト差引後</div>
+                    <div class="dkc-badge neu" id="d-margin-badge">利益率 -</div>
+                </div>
+                <div class="dash-kpi-card amber">
+                    <div class="dkc-label">今月販売数</div>
+                    <div class="dkc-value" id="d-qty">0件</div>
+                    <div class="dkc-sub">売却済商品数</div>
+                    <div class="dkc-badge neu" id="d-rate-badge">成功率 -</div>
+                </div>
+                <div class="dash-kpi-card purple">
+                    <div class="dkc-label">平均販売日数</div>
+                    <div class="dkc-value" id="d-days">-日</div>
+                    <div class="dkc-sub">出品→売却まで</div>
+                </div>
+                <div class="dash-kpi-card rose">
+                    <div class="dkc-label">総在庫数</div>
+                    <div class="dkc-value" id="d-total">0</div>
+                    <div class="dkc-sub" id="d-listed-sub">出品中 0件</div>
+                </div>
+                <div class="dash-kpi-card cyan">
+                    <div class="dkc-label">人気ブランド</div>
+                    <div class="dkc-value" style="font-size:1.1rem;margin-top:4px;" id="d-brand">-</div>
+                    <div class="dkc-sub" id="d-brand-sub">売上トップ</div>
+                </div>
+            </div>
+ 
+            <!-- メインチャート行: 売上推移（大）+ ブランド比率（小） -->
+            <div class="dash-main-row">
+                <div class="chart-card">
+                    <div class="chart-title">📈 月別売上・利益推移（過去6ヶ月）</div>
+                    <div class="chart-wrap"><canvas id="chart-monthly"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">💎 ブランド別売上比率</div>
+                    <div class="chart-wrap"><canvas id="chart-brand"></canvas></div>
+                </div>
+            </div>
+ 
+            <!-- サブチャート行: ステータス / プラットフォーム / 仕入れ〜販売コスト -->
+            <div class="dash-sub-row">
+                <div class="chart-card">
+                    <div class="chart-title">📦 ステータス内訳</div>
+                    <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">🏪 プラットフォーム別利益</div>
+                    <div class="chart-wrap"><canvas id="chart-platform"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">📊 平均利益率推移</div>
+                    <div class="chart-wrap"><canvas id="chart-margin"></canvas></div>
+                </div>
+            </div>
+ 
+            <!-- 直近売却テーブル -->
+            <div class="dash-recent">
+                <div class="dash-recent-title">🕐 直近の売却（最新5件）</div>
+                <div style="overflow-x:auto;">
+                    <table id="dash-recent-table">
+                        <thead>
+                            <tr>
+                                <th>管理番号</th>
+                                <th>ブランド・モデル</th>
+                                <th>販売先</th>
+                                <th>売値</th>
+                                <th>利益</th>
+                                <th>販売日</th>
+                                <th>販売日数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-recent-body">
+                            <tr><td colspan="7" style="color:var(--text-sub);text-align:center;padding:20px;">データなし</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+ 
+        </div>
+ 
+        <!-- ===== INVENTORY ===== -->
+        <div class="page" id="page-inventory">
+            <div class="inventory-toolbar">
+                <input class="search-box" type="text" placeholder="ブランド・モデル・ステータスで検索..." oninput="filterTable(this.value)">
+                <select class="filter-select" onchange="filterByStatus(this.value)">
+                    <option value="">全ステータス</option>
+                    <option value="出品中">出品中</option>
+                    <option value="売却済">売却済</option>
+                    <option value="在庫">在庫</option>
+                    <option value="破損">破損</option>
+                </select>
+                <button class="btn btn-primary" onclick="toggleAddForm()">➕ 新規追加</button>
+            </div>
+ 
+            <!-- Add Form -->
+            <div class="add-form-wrap" id="add-form">
+                <div style="font-size:0.9rem;font-weight:700;margin-bottom:14px;color:var(--text);" id="form-mode-label">新規商品追加</div>
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label>管理番号</label>
+                        <input type="text" id="f-id" placeholder="例: WT0001, ROL-001">
+                    </div>
+                    <div class="form-field">
+                        <label>ブランド</label>
+                        <select id="f-brand"><option value="">選択...</option></select>
+                    </div>
+                    <div class="form-field">
+                        <label>モデル</label>
+                        <input type="text" id="f-model" placeholder="モデル名">
+                    </div>
+                    <div class="form-field">
+                        <label>状態</label>
+                        <select id="f-condition">
+                            <option>稼働品</option><option>ジャンク</option><option>未使用</option>
+                            <option>難あり</option><option>部品取り</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>出品日</label>
+                        <input type="date" id="f-listdate">
+                    </div>
+                    <div class="form-field">
+                        <label>仕入価格 (¥)</label>
+                        <input type="number" id="f-cost" placeholder="0">
+                    </div>
+                    <div class="form-field">
+                        <label>送料 (¥)</label>
+                        <input type="number" id="f-shipping" placeholder="0">
+                    </div>
+                    <div class="form-field">
+                        <label>他コスト (¥)</label>
+                        <input type="number" id="f-other" placeholder="0">
+                    </div>
+                    <div class="form-field">
+                        <label>販売先</label>
+                        <select id="f-platform">
+                            <option>メルカリ</option><option>ヤフオク</option>
+                            <option>PayPayフリマ</option><option>eBay</option><option>その他</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>メルカリURL</label>
+                        <input type="url" id="f-url" placeholder="https://...">
+                    </div>
+                    <div class="form-field">
+                        <label>ステータス</label>
+                        <select id="f-status">
+                            <option>出品中</option><option>売却済</option>
+                            <option>在庫</option><option>破損</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>販売先URL</label>
+                        <input type="url" id="f-saleurl" placeholder="https://...">
+                    </div>
+                    <div class="form-field">
+                        <label>販売日</label>
+                        <input type="date" id="f-saledate">
+                    </div>
+                    <div class="form-field">
+                        <label>売値 (¥)</label>
+                        <input type="number" id="f-price" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="saveItem()">💾 保存</button>
+                    <button class="btn" style="background:#e2e8f0;color:var(--text);" onclick="cancelForm()">キャンセル</button>
+                </div>
+            </div>
+ 
+            <div class="table-wrap">
+                <div class="table-scroll">
+                    <table id="inventory-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('watch_id')">管理番号</th>
+                                <th onclick="sortTable('brand')">ブランド</th>
+                                <th onclick="sortTable('model')">モデル</th>
+                                <th>状態</th>
+                                <th>メルカリURL</th>
+                                <th onclick="sortTable('list_date')">出品日</th>
+                                <th onclick="sortTable('purchase_price')">仕入価格</th>
+                                <th>送料</th>
+                                <th>他コスト</th>
+                                <th>販売先</th>
+                                <th onclick="sortTable('status')">ステータス</th>
+                                <th>販売先URL</th>
+                                <th onclick="sortTable('sale_date')">販売日</th>
+                                <th onclick="sortTable('sale_price')">売値</th>
+                                <th>⏰日数</th>
+                                <th onclick="sortTable('profit')">💰利益</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+ 
+        <!-- ===== KPI ===== -->
+        <div class="page" id="page-kpi">
+            <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;font-size:0.9rem;font-weight:600;" id="kpi-month-label"></div>
+            <div class="kpi-grid" id="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-title">🎯 売上目標</div>
+                    <div class="kpi-value" id="k-sales">¥0</div>
+                    <div class="kpi-goal" id="k-sales-goal">目標: ¥500,000</div>
+                    <div class="progress-bar"><div class="progress-fill" id="k-sales-bar" style="width:0%"></div></div>
+                    <div class="progress-pct" id="k-sales-pct">0% 達成</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">💰 利益目標</div>
+                    <div class="kpi-value" id="k-profit">¥0</div>
+                    <div class="kpi-goal" id="k-profit-goal">目標: ¥150,000</div>
+                    <div class="progress-bar"><div class="progress-fill" id="k-profit-bar" style="width:0%"></div></div>
+                    <div class="progress-pct" id="k-profit-pct">0% 達成</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-title">📦 販売数目標</div>
+                    <div class="kpi-value" id="k-qty">0</div>
+                    <div class="kpi-goal" id="k-qty-goal">目標: 20個</div>
+                    <div class="progress-bar"><div class="progress-fill" id="k-qty-bar" style="width:0%"></div></div>
+                    <div class="progress-pct" id="k-qty-pct">0% 達成</div>
+                </div>
+            </div>
+        </div>
+ 
+        <!-- ===== ANALYTICS ===== -->
+        <div class="page" id="page-analytics">
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-label">🏆 ベストセラー</div>
+                    <div class="card-value" style="font-size:1.1rem;" id="a-best">-</div>
+                    <div class="card-sub">最高利益商品</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">📈 平均利益率</div>
+                    <div class="card-value" id="a-margin">0%</div>
+                    <div class="card-sub">売値に対する利益</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">🚀 最速販売</div>
+                    <div class="card-value" id="a-fast">0日</div>
+                    <div class="card-sub">最短販売期間</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">🎯 在庫回転率</div>
+                    <div class="card-value" id="a-turn">0回</div>
+                    <div class="card-sub">月間在庫回転回数</div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">ブランド別利益ランキング</div>
+                    <div class="chart-wrap"><canvas id="chart-brand-profit"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">プラットフォーム別売上</div>
+                    <div class="chart-wrap"><canvas id="chart-platform2"></canvas></div>
+                </div>
+            </div>
+        </div>
+ 
+        <!-- ===== NOTES ===== -->
+        <div class="page" id="page-notes">
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                <div class="note-colors">
+                    <button class="note-color-btn" style="background:#fef9c3;" onclick="addNote('#fef9c3')" title="黄"></button>
+                    <button class="note-color-btn" style="background:#dcfce7;" onclick="addNote('#dcfce7')" title="緑"></button>
+                    <button class="note-color-btn" style="background:#dbeafe;" onclick="addNote('#dbeafe')" title="青"></button>
+                    <button class="note-color-btn" style="background:#fce7f3;" onclick="addNote('#fce7f3')" title="ピンク"></button>
+                    <button class="note-color-btn" style="background:#f3e8ff;" onclick="addNote('#f3e8ff')" title="紫"></button>
+                </div>
+                <span style="font-size:0.8rem;color:var(--text-sub);">色を選んで付箋を追加</span>
+            </div>
+            <div class="notes-grid" id="notes-grid"></div>
+        </div>
+ 
+        <!-- ===== SETTINGS ===== -->
+        <div class="page" id="page-settings">
+            <!-- ツール名・アカウント管理 -->
+            <div class="settings-section">
+                <div class="settings-title">🏷️ ツール名・表示名設定</div>
+                <div class="settings-grid">
+                    <div class="setting-field">
+                        <label>ツール名（ログイン画面・サイドバー）</label>
+                        <input type="text" id="s-toolname" placeholder="Watch OS">
+                    </div>
+                    <div class="setting-field">
+                        <label>表示名（サイドバー下部）</label>
+                        <input type="text" id="s-displayname" placeholder="あなたの名前">
+                    </div>
+                </div>
+            </div>
+ 
+            <!-- アカウント管理 (ADMIN ONLY) -->
+            <div class="settings-section admin-only" id="section-accounts">
+                <div class="settings-title">👥 アカウント管理 <span class="role-badge role-admin" style="vertical-align:middle;">ADMIN専用</span></div>
+ 
+                <!-- ユーザー一覧 -->
+                <div id="accounts-list" style="margin-bottom:16px;"></div>
+ 
+                <!-- 招待コード発行 -->
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+                    <div style="font-size:0.85rem;font-weight:700;color:#92400e;margin-bottom:10px;">🎟️ 招待コード発行（コンサル生に送る）</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <select id="s-invite-role" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:0.85rem;outline:none;">
+                            <option value="user">USER（閲覧・在庫操作）</option>
+                            <option value="admin">ADMIN（全権限）</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" onclick="generateInviteCode()">招待コードを発行</button>
+                    </div>
+                    <div id="invite-result" style="display:none;" class="invite-box">
+                        <div style="font-size:0.8rem;font-weight:600;color:#065f46;">発行した招待コード（24時間有効）</div>
+                        <div class="invite-code" id="invite-code-display">--------</div>
+                        <button class="invite-copy-btn" onclick="copyInviteCode()">📋 コピー</button>
+                        <div style="font-size:0.75rem;color:var(--text-sub);margin-top:6px;">このコードをコンサル生に送ってください。登録後に自動で無効になります。</div>
+                    </div>
+                </div>
+ 
+                <!-- 手動でアカウント追加 -->
+                <details style="margin-bottom:8px;">
+                    <summary style="font-size:0.82rem;font-weight:600;color:var(--text-sub);cursor:pointer;padding:4px 0;">▶ 手動でアカウントを直接追加</summary>
+                    <div class="settings-grid" style="margin-top:12px;">
+                        <div class="setting-field">
+                            <label>ユーザー名</label>
+                            <input type="text" id="s-new-username" placeholder="username">
+                        </div>
+                        <div class="setting-field">
+                            <label>表示名</label>
+                            <input type="text" id="s-new-displayname" placeholder="名前">
+                        </div>
+                        <div class="setting-field">
+                            <label>パスワード</label>
+                            <input type="password" id="s-new-password" placeholder="password">
+                        </div>
+                        <div class="setting-field">
+                            <label>権限</label>
+                            <select id="s-new-role" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:0.875rem;outline:none;">
+                                <option value="user">USER</option>
+                                <option value="admin">ADMIN</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="addAccount()">➕ アカウント追加</button>
+                </details>
+            </div>
+ 
+            <!-- 自分のパスワード変更（全ユーザー） -->
+            <div class="settings-section">
+                <div class="settings-title">🔑 パスワード変更</div>
+                <div class="settings-grid">
+                    <div class="setting-field">
+                        <label>現在のパスワード</label>
+                        <input type="password" id="s-cur-password" placeholder="現在のパスワード">
+                    </div>
+                    <div class="setting-field">
+                        <label>新しいパスワード</label>
+                        <input type="password" id="s-new-password2" placeholder="8文字以上">
+                    </div>
+                    <div class="setting-field">
+                        <label>確認</label>
+                        <input type="password" id="s-new-password3" placeholder="もう一度入力">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="changePassword()">パスワードを変更</button>
+            </div>
+ 
+            <!-- 管理番号 -->
+            <div class="settings-section">
+                <div class="settings-title">🔢 管理番号設定</div>
+                <div class="settings-grid">
+                    <div class="setting-field">
+                        <label>プレフィックス</label>
+                        <input type="text" id="s-prefix" placeholder="例: WT">
+                    </div>
+                    <div class="setting-field">
+                        <label>次の番号</label>
+                        <input type="number" id="s-next" placeholder="1">
+                    </div>
+                    <div class="setting-field">
+                        <label>桁数</label>
+                        <select id="s-digits">
+                            <option value="3">3桁 (例: WT001)</option>
+                            <option value="4" selected>4桁 (例: WT0001)</option>
+                            <option value="5">5桁 (例: WT00001)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top:10px;font-size:0.85rem;color:var(--primary);">プレビュー: <strong id="id-preview">WT0001</strong></div>
+            </div>
+ 
+            <!-- KPI目標 -->
+            <div class="settings-section">
+                <div class="settings-title">🎯 月間KPI目標</div>
+                <div class="settings-grid">
+                    <div class="setting-field">
+                        <label>売上目標 (¥)</label>
+                        <input type="number" id="s-sales-goal" placeholder="500000">
+                    </div>
+                    <div class="setting-field">
+                        <label>利益目標 (¥)</label>
+                        <input type="number" id="s-profit-goal" placeholder="150000">
+                    </div>
+                    <div class="setting-field">
+                        <label>販売数目標 (個)</label>
+                        <input type="number" id="s-qty-goal" placeholder="20">
+                    </div>
+                </div>
+            </div>
+ 
+            <!-- 手数料 -->
+            <div class="settings-section">
+                <div class="settings-title">💳 プラットフォーム手数料 (%)</div>
+                <div class="settings-grid">
+                    <div class="setting-field"><label>メルカリ</label><input type="number" id="s-fee-mercari" placeholder="10"></div>
+                    <div class="setting-field"><label>ヤフオク</label><input type="number" id="s-fee-yahoo" placeholder="8.8"></div>
+                    <div class="setting-field"><label>PayPayフリマ</label><input type="number" id="s-fee-paypay" placeholder="5"></div>
+                    <div class="setting-field"><label>eBay</label><input type="number" id="s-fee-ebay" placeholder="13"></div>
+                </div>
+            </div>
+ 
+            <!-- ブランド管理 -->
+            <div class="settings-section">
+                <div class="settings-title">🏷️ ブランド管理</div>
+                <div class="brand-list" id="brand-list"></div>
+                <div style="display:flex;gap:8px;margin-top:12px;">
+                    <input type="text" id="s-new-brand" placeholder="新しいブランド名" style="padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:0.875rem;outline:none;flex:1;">
+                    <button class="btn btn-primary btn-sm" onclick="addBrand()">追加</button>
+                </div>
+            </div>
+ 
+            <!-- eBay設定 -->
+            <div class="settings-section">
+                <div class="settings-title">🌐 eBay連携設定</div>
+                <div class="settings-grid">
+                    <div class="setting-field"><label>eBay APP ID</label><input type="text" id="s-ebay-appid" placeholder="App ID"></div>
+                    <div class="setting-field"><label>配送プロファイルID</label><input type="number" id="s-ebay-ship" placeholder="配送プロファイルID"></div>
+                    <div class="setting-field"><label>返品ポリシーID</label><input type="number" id="s-ebay-return" placeholder="返品ポリシーID"></div>
+                    <div class="setting-field"><label>支払いプロファイルID</label><input type="number" id="s-ebay-payment" placeholder="支払いプロファイルID"></div>
+                    <div class="setting-field"><label>eBay為替レート（1USD=¥）</label><input type="number" id="s-ebay-rate" placeholder="150"></div>
+                    <div class="setting-field"><label>デフォルト出品カテゴリ</label><input type="text" id="s-ebay-category" placeholder="例: 281" title="eBay カテゴリID"></div>
+                </div>
+                <div style="margin-top:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:0.8rem;color:#92400e;">
+                    ⚠️ eBay出品時に自動入力される情報：APP ID・プロファイルID・カテゴリ。あなたが入力するのは <strong>商品価格($)</strong> と <strong>商品説明文</strong> のみです。
+                </div>
+            </div>
+ 
+            <button class="btn-save" onclick="saveSettings()">💾 設定を保存</button>
+        </div>
+    </main>
+</div>
+ 
+<!-- eBay Modal -->
+<div class="modal-overlay" id="ebay-modal">
+    <div class="modal-box">
+        <div class="modal-title">🌐 eBayに出品</div>
+        <div class="modal-info">入力が必要なのは価格と説明文のみです。タイトル・プロファイル等は自動設定されます。</div>
+        <div class="modal-field">
+            <label>自動生成タイトル（編集可）</label>
+            <input type="text" id="ebay-title">
+        </div>
+        <div class="modal-field">
+            <label>販売価格 (USD) ※必須</label>
+            <input type="number" id="ebay-price" placeholder="例: 49.99" step="0.01">
+        </div>
+        <div class="modal-field">
+            <label>商品説明文 (英語) ※必須</label>
+            <textarea id="ebay-desc" rows="4" placeholder="Describe the item condition, features, and any defects..."></textarea>
+        </div>
+        <div class="modal-field">
+            <label>参考: 円換算（概算）</label>
+            <div id="ebay-jpy-ref" style="padding:8px;background:#f8fafc;border-radius:6px;font-size:0.85rem;color:var(--text-sub);">価格を入力すると表示</div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" style="background:#e2e8f0;color:var(--text);" onclick="closeEbayModal()">キャンセル</button>
+            <button class="btn btn-primary" onclick="submitEbay()">🚀 eBayに出品</button>
+        </div>
+    </div>
+</div>
+ 
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+ 
+<script>
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const API = '/api';
+let inventory = [];
+let settings = {};
+let notes = [];
+let sortKey = '';
+let sortAsc = true;
+let editingId = null;
+let currentEbayItem = null;
+let charts = {};
+ 
+const DEFAULT_SETTINGS = {
+    toolName: 'Watch OS',
+    displayName: '',
+    accounts: [{ username: 'admin', displayName: '管理者', password: 'admin1234', role: 'admin' }],
+    prefix: 'WT',
+    nextNum: 1,
+    digits: 4,
+    salesGoal: 500000,
+    profitGoal: 150000,
+    qtyGoal: 20,
+    fees: { mercari: 10, yahoo: 8.8, paypay: 5, ebay: 13 },
+    brands: ['SEIKO','CASIO','CITIZEN','OMEGA','ROLEX','TAG HEUER','BREITLING','TISSOT','ORIENT'],
+    ebay: { appId: '', shipProfileId: '', returnProfileId: '', paymentProfileId: '', rate: 150, category: '281' },
+    inviteCodes: [],
+    chatwork: { token: '6d8a5ac6f93798688cc66d3f0e9fee16', roomId: '' }
+};
+ 
+// ============================================================
+// AUTH  ── メール認証・招待制・ADMIN/USER権限・同時ログイン制限
+// ============================================================
+let currentUser = null;   // { email, username, role, token }
+let sessionTimer = null;
+let pendingRegData = null; // 申請中の一時データ
+const SESSION_TIMEOUT = 60 * 60 * 1000; // 1時間
+ 
+// ---------- 初期化 ----------
+function initAuth() {
+    loadSettings();
+    const toolName = settings.toolName || 'Watch OS';
+    document.getElementById('login-tool-name').textContent = toolName;
+    document.title = toolName + ' - 時計物販管理システム';
+ 
+    const saved = _loadSession();
+    if (saved) {
+        _verifyToken(saved.token).then(ok => {
+            if (ok) { currentUser = saved; showApp(); }
+        });
+    }
 }
-
-async function addSample() {
-  const text = document.getElementById('sampleText').value.trim();
-  const label = document.getElementById('sampleLabel').value.trim() || '参考';
-  if (!text) { showToast('文章を入力してください'); return; }
-  try {
-    const res = await apiFetch('/samples', {
-      method: 'POST',
-      body: JSON.stringify({ text, label })
+ 
+// ---------- 画面切替（ログイン ⇔ アカウント作成） ----------
+function switchLoginTab(tab) {
+    const loginPanel    = document.getElementById('panel-login');
+    const registerPanel = document.getElementById('panel-register');
+    if (tab === 'register') {
+        loginPanel.style.display    = 'none';
+        registerPanel.style.display = 'block';
+        resetRegisterSteps();
+    } else {
+        loginPanel.style.display    = 'block';
+        registerPanel.style.display = 'none';
+    }
+    // エラークリア
+    ['login-error','reg-error1','reg-error2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.style.display='none'; el.textContent=''; }
     });
-    document.getElementById('sampleText').value = '';
-    document.getElementById('sampleLabel').value = '';
-    showToast(`✅ 登録しました（合計${res.count}件）`);
-    loadSamples();
-  } catch(e) {
-    showToast('❌ 登録に失敗しました');
-  }
 }
-
-async function deleteSample(id) {
-  try {
-    await apiFetch(`/samples/${id}`, { method: 'DELETE' });
-    showToast('🗑 削除しました');
-    loadSamples();
-  } catch(e) {
-    showToast('❌ 削除に失敗しました');
-  }
+ 
+function resetRegisterSteps() {
+    ['reg-step1','reg-step2','reg-step3'].forEach((id,i) => {
+        document.getElementById(id).classList.toggle('active', i===0);
+    });
+    _updateStepDots(1);
+    pendingRegData = null;
 }
-
-// ════════════════════════════
-// AI生成
-// ════════════════════════════
-async function generateAI() {
-  const btn = document.getElementById('aiBtn');
-
-  // 画像解析モードがONかつ画像が選択されている場合
-  const analyzeMode = document.getElementById('imgAnalyzeMode') &&
-                      document.getElementById('imgAnalyzeMode').checked &&
-                      imgState.file;
-
-  if (analyzeMode) {
-    await generateFromImage();
-    return;
-  }
-
-  btn.textContent = '⏳ 生成中...';
-  btn.disabled = true;
-
-  try {
-    const postTypeEl = document.querySelector('input[name="ptype"]:checked');
-    const post_type = postTypeEl ? postTypeEl.value : 'random';
-
-    const apiKey = getApiKey();
-    if (!apiKey || apiKey.length < 10) {
-      // APIキーなし → テンプレートにフォールバック
-      state.currentThread = localGenerate(post_type);
-      renderThreadPreview(state.currentThread.tweets, state.currentThread.type);
-      document.getElementById('postBtn').disabled = false;
-      showToast('📋 テンプレート生成（AI使用にはAPIキーを設定タブで入力）');
-      return;
-    }
-
-    const typeMap = {
-      arbitrage: '実際の仕入れ→販売の利益事例を紹介する投稿。具体的な金額・ROIを必ず入れる。',
-      education: '時計物販のノウハウやマインドセットを教える投稿。読者が行動できる気づきを与える。',
-      question:  '読者にコメントや反応を促す問いかけ投稿。選択肢を提示してエンゲージメントを高める。',
-      random:    '時計物販に関する有益な投稿。種類は自由。',
-    };
-
-    // 学習済み参考文章を取得
-    let sampleBlock = '';
+ 
+function _updateStepDots(currentStep) {
+    [1,2,3].forEach(n => {
+        const dot = document.getElementById('step'+n+'-dot');
+        dot.className = 'step-dot ' + (n < currentStep ? 'done' : n === currentStep ? 'current' : '');
+        if (n < currentStep) dot.textContent = '✓';
+        else dot.textContent = n;
+    });
+    [1,2].forEach(n => {
+        const line = document.getElementById('step'+n+'-line');
+        if (line) line.className = 'step-line ' + (n < currentStep ? 'done' : '');
+    });
+}
+ 
+// ---------- ログイン ----------
+async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const btn   = document.getElementById('login-btn');
+    if (!email || !pass) { _showErr(errEl, 'メールアドレスとパスワードを入力してください'); return; }
+ 
+    btn.disabled = true; btn.textContent = '認証中...';
     try {
-      const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
-      const samples = (stored.samples || []).slice(-5);
-      if (samples.length) {
-        sampleBlock = '\n## 参考にする文体（このトーン・長さ・絵文字の使い方を完全に真似してください）\n'
-          + samples.map((s,i) => `【参考${i+1}: ${s.label}】\n${s.text}`).join('\n\n---\n\n') + '\n';
-      }
-    } catch(e) {}
-
-    const prompt = `あなたは時計物販の専門家として、Xに投稿するスレッド形式の文章を作成してください。
-${sampleBlock}
-
-## 投稿の種類
-${typeMap[post_type] || typeMap.random}
-
-## 絶対に守るルール
-- スレッド形式で3〜4件のツイートに分ける
-- 【重要】各ツイートは200〜350文字程度でしっかり書く。短くまとめるのは禁止。
-- 1ツイート目：100〜150文字で読者を引き込むフック
-- 2ツイート目：250〜350文字でメインの内容を詳しく
-- 3ツイート目：150〜250文字でまとめ＋P.S.＋ハッシュタグ
-- 😊👍🙌😳🤔😅などの絵文字を各ツイートに2〜3個使う
-- 話しかけるような柔らかいトーン
-- 「ここがポイント🔑」などの小見出しを入れる
-- 最後のツイートにP.S.と次回予告・フォロー促進を入れる
-- 最後のツイートに #時計物販 #副業 などのハッシュタグを入れる
-- 毎回異なる切り口・テーマで書く
-
-## 出力形式
-必ずJSON形式のみ。他のテキストは一切不要。
-{"tweets": ["1件目", "2件目", "3件目"]}`;
-
-    const tweets = await callGemini(apiKey, prompt);
-    state.currentThread = { tweets, type: post_type, ai_generated: true };
-    renderThreadPreview(tweets, post_type);
-    document.getElementById('postBtn').disabled = false;
-    showToast(`✨ AI生成 — ${tweets.length}件生成`);
-
-  } catch(e) {
-    console.error('AI生成エラー:', e);
-    showToast('❌ ' + (e.message || 'AI生成に失敗しました'));
-    // エラー時はテンプレートで代替
+        const res = await fetch(API + '/auth/login', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ email, password: pass })
+        });
+        const data = await res.json();
+        if (res.status === 409) { _showErr(errEl, '別の端末でログイン中です。そちらをログアウトしてから試してください。'); return; }
+        if (!res.ok) { _showErr(errEl, data.detail || 'メールアドレスまたはパスワードが違います'); return; }
+        currentUser = { email: data.email, username: data.username, role: data.role, token: data.access_token };
+        _saveSession(currentUser);
+        showApp();
+    } catch {
+        _localLogin(email, pass, errEl);
+    } finally {
+        btn.disabled = false; btn.textContent = 'ログイン';
+    }
+}
+ 
+function _localLogin(email, pass, errEl) {
+    const accounts = settings.accounts || DEFAULT_SETTINGS.accounts;
+    const match = accounts.find(a => (a.email === email || a.username === email) && a.password === pass);
+    if (match) {
+        currentUser = { email: match.email||email, username: match.username, role: match.role||'user', token: 'local_'+Date.now() };
+        _saveSession(currentUser);
+        errEl.style.display = 'none';
+        showApp();
+    } else {
+        _showErr(errEl, 'メールアドレスまたはパスワードが違います');
+    }
+}
+ 
+// ---------- STEP1: 基本情報申請 → 招待コード自動生成 → ChatWork通知 ----------
+async function submitStep1() {
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-password').value;
+    const uname = document.getElementById('reg-username').value.trim();
+    const errEl = document.getElementById('reg-error1');
+    const btn   = document.getElementById('reg-step1-btn');
+ 
+    if (!email || !pass || !uname) { _showErr(errEl, '全て入力してください'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { _showErr(errEl, '正しいメールアドレスを入力してください'); return; }
+    if (pass.length < 8) { _showErr(errEl, 'パスワードは8文字以上にしてください'); return; }
+    if ((settings.accounts||[]).find(a => a.email === email)) { _showErr(errEl, 'そのメールアドレスは既に登録されています'); return; }
+ 
+    btn.disabled = true; btn.textContent = '申請中...';
+ 
+    // ── 招待コードを自動生成（使い捨て・24時間有効）──
+    const code   = _generateCode();
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    if (!settings.inviteCodes) settings.inviteCodes = [];
+    settings.inviteCodes.push({ code, role: 'user', expiry, used: false, requestedBy: email, createdAt: new Date().toISOString() });
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+ 
+    // ── まずバックエンド経由で通知を試みる ──
+    let notified = false;
     try {
-      state.currentThread = localGenerate(post_type || 'random');
-      renderThreadPreview(state.currentThread.tweets, state.currentThread.type);
-      document.getElementById('postBtn').disabled = false;
-      showToast('📋 テンプレートで代替しました');
-    } catch(e2) {}
-  } finally {
-    btn.textContent = '✨ AI生成';
-    btn.disabled = false;
-  }
+        const res = await fetch(API + '/auth/request-invite', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, username: uname, invite_code: code, expiry })
+        });
+        if (res.ok) notified = true;
+    } catch {}
+ 
+    // ── バックエンドが動いていない場合 → ChatWork APIに直接送信 ──
+    // ※ CORS制限があるため、バックエンドが使えるならそちらが確実
+    if (!notified) {
+        notified = await _sendChatWorkDirect(email, uname, code);
+    }
+ 
+    btn.disabled = false; btn.textContent = '招待コードを申請する';
+    errEl.style.display = 'none';
+    pendingRegData = { email, password: pass, username: uname };
+ 
+    // ── 通知結果に関わらず Step2 へ ──
+    const pendingBox = document.getElementById('step2-pending-msg');
+    if (pendingBox) {
+        pendingBox.innerHTML = notified
+            ? '<strong>申請を受け付けました 📩</strong><br>管理者に通知を送りました。<br>招待コードが届いたら下に入力してください。'
+            : '<strong>申請を受け付けました</strong><br>管理者にお問い合わせいただき、招待コードを受け取ってください。';
+    }
+    document.getElementById('reg-step1').classList.remove('active');
+    document.getElementById('reg-step2').classList.add('active');
+    _updateStepDots(2);
 }
-
-// 画像から投稿文を生成
-async function generateFromImage() {
-  if (!imgState.dataURL) { showToast('先に画像を選択してください'); return; }
-
-  const apiKey = getApiKey();
-  if (!apiKey || apiKey.length < 10) {
-    showToast('❌ 設定タブでGemini APIキーを入力してください');
-    return;
-  }
-
-  const btn = document.getElementById('aiBtn');
-  btn.textContent = '📷 解析中...';
-  btn.disabled = true;
-  const statusEl = document.getElementById('uploadStatus');
-  statusEl.textContent = '📷 画像を解析中...';
-  statusEl.style.color = '#c4b5fd';
-
-  try {
-    const postTypeEl = document.querySelector('input[name="ptype"]:checked');
-    const buyPrice = (document.getElementById('buyPriceInput') || {}).value || '';
-    const b64      = imgState.dataURL.split(',')[1];
-    const mimeM    = imgState.dataURL.match(/data:([^;]+);/);
-    const mime     = mimeM ? mimeM[1] : 'image/jpeg';
-    const maskTop  = imgState.maskTop || 0;
-    const maskBot  = imgState.maskBot || 0;
-
-    const maskNote = maskTop > 0 || maskBot > 0
-      ? `画像の上${maskTop}%〜${maskBot}%は黒塗りされており読み取れません。`
-      : '';
-
-    const buyNote = buyPrice
-      ? `仕入れ額: ${parseInt(buyPrice).toLocaleString()}円。手残り = 販売価格×0.9 - 200 - ${parseInt(buyPrice).toLocaleString()}で計算してください。`
-      : '仕入れ額は不明。画像の価格のみ使用。';
-
-    const postType = postTypeEl ? postTypeEl.value : 'arbitrage';
-    const typeMap  = {
-      arbitrage: '仕入れ→販売の差益を紹介する投稿。価格差・手残り・ROIを計算して入れる。',
-      education: 'ノウハウ・学び系の投稿。読者が行動できる気づきを与える。',
-      question:  '読者に問いかけるエンゲージメント投稿。選択肢を提示する。',
+ 
+// ── 招待コード生成（8文字・紛らわしい文字を除外）──
+function _generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+ 
+// ── ChatWork API に直接POST（フロントエンドから）──
+// ※ ChatWork APIはCORSを許可しているため、フロントから直接呼び出し可能
+async function _sendChatWorkDirect(email, username, code) {
+    const token  = settings.chatwork?.token;
+    const roomId = settings.chatwork?.roomId;
+    if (!token || !roomId) return false;
+ 
+    const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const expiry = new Date(Date.now() + 24*60*60*1000).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    const msg = [
+        '[info][title]⌚ Watch OS アカウント申請[/title]',
+        `申請者名: ${username}`,
+        `メール: ${email}`,
+        `申請日時: ${now}`,
+        '',
+        '━━━━━━━━━━━━━━━',
+        `招待コード: [code]${code}[/code]`,
+        `有効期限: ${expiry}（24時間）`,
+        '━━━━━━━━━━━━━━━',
+        '',
+        'このコードをコンサル生に送ってください。',
+        '※ 1回限り有効・期限切れで自動無効[/info]'
+    ].join('\n');
+ 
+    try {
+        const res = await fetch(`https://api.chatwork.com/v2/rooms/${roomId}/messages`, {
+            method: 'POST',
+            headers: { 'X-ChatWorkToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'body=' + encodeURIComponent(msg)
+        });
+        return res.ok;
+    } catch { return false; }
+}
+ 
+// ── ChatWork テスト送信 ──
+async function testChatWork() {
+    const token  = document.getElementById('s-cw-token').value;
+    const roomId = document.getElementById('s-cw-room').value;
+    const res_el = document.getElementById('cw-test-result');
+    if (!token || !roomId) { res_el.style.display='block'; res_el.style.color='var(--danger)'; res_el.textContent='⚠️ APIトークンとルームIDを入力してください'; return; }
+ 
+    res_el.style.display='block'; res_el.textContent='送信中...'; res_el.style.color='var(--text-sub)';
+    try {
+        const r = await fetch(`https://api.chatwork.com/v2/rooms/${roomId}/messages`, {
+            method: 'POST',
+            headers: { 'X-ChatWorkToken': token, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'body=' + encodeURIComponent('[info][title]⌚ Watch OS テスト送信[/title]ChatWork連携の設定が完了しました！\nコンサル生からのアカウント申請がここに届きます。[/info]')
+        });
+        if (r.ok) { res_el.style.color='var(--success)'; res_el.textContent='✅ 送信成功！ChatWorkを確認してください'; }
+        else { res_el.style.color='var(--danger)'; res_el.textContent='❌ 送信失敗（トークンまたはルームIDを確認してください）'; }
+    } catch { res_el.style.color='var(--danger)'; res_el.textContent='❌ 通信エラー（ネットワークを確認してください）'; }
+}
+ 
+// ---------- STEP2: 招待コード検証→登録 ----------
+async function submitStep2() {
+    const code  = document.getElementById('reg-invite-code').value.trim().toUpperCase();
+    const errEl = document.getElementById('reg-error2');
+    if (!code || code.length < 6) { _showErr(errEl, '招待コードを入力してください'); return; }
+    if (!pendingRegData) { _showErr(errEl, 'セッションが切れました。最初からやり直してください'); return; }
+ 
+    try {
+        const res = await fetch(API + '/auth/register', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+                invite_code: code,
+                email: pendingRegData.email,
+                username: pendingRegData.username,
+                password: pendingRegData.password
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) { _showErr(errEl, data.detail || '招待コードが無効です'); return; }
+        currentUser = { email: data.email, username: data.username, role: data.role, token: data.access_token };
+        _saveSession(currentUser);
+        _registrationSuccess();
+        return;
+    } catch {}
+ 
+    // フォールバック: ローカル検証
+    _localRegister(code, errEl);
+}
+ 
+function _localRegister(code, errEl) {
+    const invites = settings.inviteCodes || [];
+    const now = new Date();
+    const inv = invites.find(i =>
+        i.code === code &&
+        !i.used &&
+        new Date(i.expiry) > now
+    );
+    if (!inv) { _showErr(errEl, '招待コードが無効または期限切れです'); return; }
+ 
+    // メール重複チェック
+    if ((settings.accounts||[]).find(a => a.email === pendingRegData.email)) {
+        _showErr(errEl, 'そのメールアドレスは既に登録されています'); return;
+    }
+ 
+    // 招待コードを即時無効化（使い捨て）
+    inv.used = true;
+    inv.usedAt = now.toISOString();
+    inv.usedBy = pendingRegData.email;
+ 
+    // アカウント登録
+    if (!settings.accounts) settings.accounts = [];
+    settings.accounts.push({
+        email: pendingRegData.email,
+        username: pendingRegData.username,
+        password: pendingRegData.password,
+        role: inv.role || 'user',
+        createdAt: now.toISOString()
+    });
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+ 
+    currentUser = {
+        email: pendingRegData.email,
+        username: pendingRegData.username,
+        role: inv.role || 'user',
+        token: 'local_' + Date.now()
     };
-
-    const prompt = `あなたは時計物販の専門家です。
-添付画像（メルカリ・ヤフオクのスクリーンショット）を分析してXに投稿するスレッド形式の文章を作成してください。
-${maskNote}
-
-## 投稿の種類
-${typeMap[postType] || typeMap.arbitrage}
-
-## 利益情報
-${buyNote}
-
-## 絶対に守るルール
-- スレッド形式で3〜4件のツイートに分ける
-- 【最重要】商品名・出品タイトル・商品説明文は絶対に使わない
-- 使ってよい情報：ブランド名・型番・価格・いいね数・評価数
-- 「この時計」「こちらの商品」などで表現する
-- 😊👍🙌😳🤔😅などの絵文字を各ツイートに2〜3個使う
-- 【重要】各ツイートは200〜350文字程度でしっかり書く。短くまとめるのは禁止。
-- 1ツイート目：100〜150文字で読者を引き込むフック
-- 2ツイート目：250〜350文字で価格・利益・根拠を詳しく
-- 3ツイート目：150〜250文字でまとめ＋P.S.＋フォロー促進
-- 「ここがポイント🔑」などの小見出しを入れる
-- 最後のツイートに #時計物販 #副業 などのハッシュタグを入れる
-
-## 出力形式
-必ずJSON形式のみ。他のテキストは一切不要。
-{"tweets": ["1件目", "2件目", "3件目"]}`;
-
-    // Gemini APIを呼ぶ（画像対応・無料）
-    const tweets = await callGeminiVision(apiKey, prompt, b64, mime);
-
-    state.currentThread = { tweets, type: postType, ai_generated: true };
-    renderThreadPreview(tweets, postType);
-    document.getElementById('postBtn').disabled = false;
-    statusEl.textContent = '✅ 画像から文章を生成しました';
-    statusEl.style.color = 'var(--green)';
-    showToast('📷 画像から投稿文を生成しました！');
-
-  } catch(e) {
-    showToast('❌ ' + e.message);
-    statusEl.textContent = '❌ ' + e.message;
-    statusEl.style.color = 'var(--red)';
-  } finally {
-    btn.textContent = '✨ AI生成';
-    btn.disabled = false;
-  }
+    _saveSession(currentUser);
+    _registrationSuccess();
 }
-
-
-// 画像加工機能：AIプロンプトで商品名を自動除外
-
-
-
-
-// ════════════════════════════
-// 黒帯スライダー（位置・縦幅）
-// ════════════════════════════
-function toggleMaskBand(on) {
-  const band     = document.getElementById('maskBand');
-  const controls = document.getElementById('maskControls');
-  const confirmed= document.getElementById('maskConfirmed');
-  if (on) {
-    controls.style.display = 'block';
-    confirmed.style.display = 'none';
-    band.style.display = 'block';
-    onMaskSlider();
-  } else {
-    controls.style.display = 'none';
-    confirmed.style.display = 'none';
-    band.style.display = 'none';
-    imgState.maskTop = 0;
-    imgState.maskBot = 0;
-  }
+ 
+function _registrationSuccess() {
+    document.getElementById('reg-step2').classList.remove('active');
+    document.getElementById('reg-step3').classList.add('active');
+    _updateStepDots(3);
+    pendingRegData = null;
 }
-
-function onMaskSlider() {
-  const pos  = parseInt(document.getElementById('sliderPos').value);
-  const h    = parseInt(document.getElementById('sliderH').value);
-  const bot  = Math.min(pos + h, 95);
-
-  document.getElementById('sliderPosVal').textContent = pos + '%';
-  document.getElementById('sliderHVal').textContent   = h + '%';
-  document.getElementById('maskInfoText').textContent = `上${pos}%〜${bot}%を黒塗り`;
-
-  // 画像オーバーレイに反映
-  const img  = document.getElementById('previewImg');
-  const imgH = img.offsetHeight || 200;
-  const band = document.getElementById('maskBand');
-  band.style.top    = Math.round(imgH * pos / 100) + 'px';
-  band.style.height = Math.round(imgH * h   / 100) + 'px';
-  band.style.display = 'block';
-
-  // imgStateに仮保存
-  imgState.maskTop = pos;
-  imgState.maskBot = bot;
-}
-
-function confirmMask() {
-  const pos = parseInt(document.getElementById('sliderPos').value);
-  const h   = parseInt(document.getElementById('sliderH').value);
-  const bot = Math.min(pos + h, 95);
-  imgState.maskTop = pos;
-  imgState.maskBot = bot;
-
-  document.getElementById('maskControls').style.display  = 'none';
-  document.getElementById('maskConfirmed').style.display = 'block';
-  document.getElementById('maskConfirmedText').textContent = `上${pos}%〜${bot}%を黒塗り`;
-  showToast('✅ 黒塗り確定（上' + pos + '%〜' + bot + '%）');
-}
-
-
-// ════════════════════════════
-// Gemini API 共通関数
-// ════════════════════════════
-async function callGemini(apiKey, prompt) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
-      })
+ 
+// ---------- ログアウト ----------
+async function doLogout() {
+    if (currentUser?.token && !currentUser.token.startsWith('local_')) {
+        try {
+            await fetch(API + '/auth/logout', {
+                method:'POST', headers:{'Authorization':'Bearer '+currentUser.token}
+            });
+        } catch {}
     }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Gemini APIエラー ${res.status}`);
-  }
-  const data = await res.json();
-  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  text = text.trim();
-  if (text.includes('```')) { text = text.split('```')[1]; if (text.startsWith('json')) text = text.slice(4); }
-  const parsed = JSON.parse(text.trim());
-  const tweets = (parsed.tweets || []).map(t => t.length > 280 ? t.slice(0, 277) + '...' : t);
-  if (!tweets.length) throw new Error('tweetsが空');
-  return tweets;
+    currentUser = null; _clearSession();
+    if (sessionTimer) clearTimeout(sessionTimer);
+    location.reload();
 }
-
-async function callGeminiVision(apiKey, prompt, b64, mime) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { inline_data: { mime_type: mime, data: b64 } },
-            { text: prompt }
-          ]
-        }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 8192 }
-      })
+ 
+// ---------- セッション管理 ----------
+function _saveSession(u) { sessionStorage.setItem('wos_session', JSON.stringify(u)); }
+function _loadSession() { try { return JSON.parse(sessionStorage.getItem('wos_session')); } catch { return null; } }
+function _clearSession() { sessionStorage.removeItem('wos_session'); }
+ 
+async function _verifyToken(token) {
+    if (token.startsWith('local_')) return true;
+    try { const r = await fetch(API+'/auth/verify',{headers:{'Authorization':'Bearer '+token}}); return r.ok; } catch { return false; }
+}
+ 
+function _resetSessionTimer() {
+    if (sessionTimer) clearTimeout(sessionTimer);
+    sessionTimer = setTimeout(() => {
+        showToast('セッションがタイムアウトしました', 'error');
+        setTimeout(doLogout, 2000);
+    }, SESSION_TIMEOUT);
+}
+ 
+// ---------- Enter キー ----------
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('login-screen').classList.contains('hidden')) return;
+    const loginActive = document.getElementById('panel-login').classList.contains('active');
+    if (loginActive) { doLogin(); return; }
+    const step1Active = document.getElementById('reg-step1').classList.contains('active');
+    if (step1Active) { submitStep1(); return; }
+    const step2Active = document.getElementById('reg-step2').classList.contains('active');
+    if (step2Active) { submitStep2(); return; }
+});
+ 
+// ---------- アプリ表示・権限設定 ----------
+function showApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    const dname = currentUser.username || currentUser.email;
+    document.getElementById('user-display-name').textContent = dname;
+    document.getElementById('user-avatar-text').textContent = dname.charAt(0).toUpperCase();
+    document.getElementById('user-username-sub').textContent = currentUser.email || '';
+    document.getElementById('app-name-display').textContent = settings.toolName || 'Watch OS';
+    document.title = (settings.toolName||'Watch OS') + ' - 時計物販管理システム';
+ 
+    const isAdmin = currentUser.role === 'admin';
+    const badge = document.getElementById('role-badge');
+    badge.textContent = isAdmin ? 'ADMIN' : 'USER';
+    badge.className = 'role-badge ' + (isAdmin ? 'role-admin' : 'role-user');
+    document.body.classList.toggle('is-admin', isAdmin);
+ 
+    _resetSessionTimer();
+    document.addEventListener('click', _resetSessionTimer, { passive:true });
+    document.addEventListener('keydown', _resetSessionTimer, { passive:true });
+    initApp();
+}
+ 
+// ---------- エラー表示ヘルパー ----------
+function _showErr(el, msg) {
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+ 
+// ---------- 招待コード発行（ADMIN） ----------
+function generateInviteCode() {
+    if (currentUser?.role !== 'admin') { showToast('ADMIN権限が必要です', 'error'); return; }
+    const role = document.getElementById('s-invite-role').value;
+ 
+    // 使い捨て・都度変更：毎回ランダム生成、過去コードは自動で使えない
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const code = Array.from({length:8}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+    const expiry = new Date(Date.now() + 24*60*60*1000).toISOString();
+ 
+    if (!settings.inviteCodes) settings.inviteCodes = [];
+    // 未使用の古いコードは自動期限切れ扱い（再発行のたびに新コード）
+    settings.inviteCodes.push({ code, role, expiry, used: false, createdAt: new Date().toISOString() });
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+ 
+    // バックエンドにも登録
+    if (currentUser.token && !currentUser.token.startsWith('local_')) {
+        fetch(API+'/auth/invite', {
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':'Bearer '+currentUser.token},
+            body: JSON.stringify({ code, role, expiry_hours:24 })
+        }).catch(()=>{});
     }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Gemini APIエラー ${res.status}`);
-  }
-  const data = await res.json();
-  let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  text = text.trim();
-  if (text.includes('```')) { text = text.split('```')[1]; if (text.startsWith('json')) text = text.slice(4); }
-  const parsed = JSON.parse(text.trim());
-  const tweets = parsed.tweets || [];
-  if (!tweets.length) throw new Error('tweetsが空');
-  return tweets;
+ 
+    document.getElementById('invite-code-display').textContent = code;
+    document.getElementById('invite-result').style.display = 'block';
+    showToast('招待コードを発行しました（24時間有効・1回限り）');
 }
-
-// ════════════════════════════
-// XのURLから投稿文を取得して学習登録
-// ════════════════════════════
-async function fetchXPost() {
-  const url    = (document.getElementById('xUrlInput').value || '').trim();
-  const label  = (document.getElementById('xUrlLabel').value || '').trim();
-  const status = document.getElementById('xFetchStatus');
-  const apiKey = getApiKey();
-
-  if (!url.includes('x.com') && !url.includes('twitter.com')) {
-    status.textContent = '❌ XのURLを入力してください';
-    status.style.color = 'var(--red)';
-    return;
-  }
-  if (!apiKey || apiKey.length < 10) {
-    status.textContent = '❌ 先に設定タブでGemini APIキーを入力してください';
-    status.style.color = 'var(--red)';
-    return;
-  }
-
-  status.textContent = '⏳ 取得中...';
-  status.style.color = 'var(--dim)';
-
-  // GeminiにURLを渡して投稿文を推定してもらう
-  const prompt = `以下のXの投稿URLの内容を参考に、時計物販・転売の教育・相場・問いかけ系の投稿文を再現してください。
-URLから直接取得はできないので、URLのパターンや一般的なこのジャンルの投稿スタイルを参考に、
-スレッド形式3〜4件の投稿文を作成してください。
-
-URL: ${url}
-
-必ずJSON形式のみで返してください。
-{"tweets": ["1件目", "2件目", "3件目"]}`;
-
-  try {
-    const tweets = await callGemini(apiKey, prompt);
-    const text   = tweets.join('\n\n---\n\n');
-    const lbl    = label || 'X取得_' + new Date().toLocaleDateString('ja-JP');
-
-    // 学習データに追加
-    const sample = { id: Date.now(), label: lbl, text };
-    const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
-    stored.samples.push(sample);
-    localStorage.setItem('style_samples', JSON.stringify(stored));
-
-    status.textContent = `✅ 登録しました（${lbl}）`;
-    status.style.color = 'var(--green)';
-    document.getElementById('xUrlInput').value  = '';
-    document.getElementById('xUrlLabel').value  = '';
-    loadSamples();
-    showToast('✅ 参考投稿を登録しました');
-  } catch(e) {
-    status.textContent = '❌ ' + e.message;
-    status.style.color = 'var(--red)';
-  }
+ 
+function copyInviteCode() {
+    const code = document.getElementById('invite-code-display').textContent;
+    navigator.clipboard.writeText(code).then(() => showToast('コードをコピーしました'));
 }
-
+ 
+// ---------- アカウント管理（ADMIN） ----------
+function addAccount() {
+    if (currentUser?.role !== 'admin') { showToast('ADMIN権限が必要です', 'error'); return; }
+    const email = document.getElementById('s-new-username').value.trim(); // emailとして使用
+    const dn    = document.getElementById('s-new-displayname').value.trim();
+    const p     = document.getElementById('s-new-password').value;
+    const r     = document.getElementById('s-new-role').value;
+    if (!email || !p) { showToast('メールアドレスとパスワードを入力してください', 'error'); return; }
+    if (!settings.accounts) settings.accounts = [];
+    if (settings.accounts.find(a => a.email === email || a.username === email)) { showToast('そのアドレスは既に存在します', 'error'); return; }
+    settings.accounts.push({ email, username: dn||email, displayName: dn, password: p, role: r, createdAt: new Date().toISOString() });
+    ['s-new-username','s-new-displayname','s-new-password'].forEach(id => { document.getElementById(id).value=''; });
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+    renderAccountsList();
+    showToast('アカウントを追加しました ✅');
+}
+ 
+function removeAccount(email) {
+    if (currentUser?.role !== 'admin') return;
+    if (email === currentUser.email) { showToast('自分のアカウントは削除できません', 'error'); return; }
+    if (!confirm(email + ' を削除しますか？')) return;
+    settings.accounts = (settings.accounts||[]).filter(a => a.email !== email);
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+    renderAccountsList();
+    showToast('削除しました');
+}
+ 
+function resetPassword(email) {
+    if (currentUser?.role !== 'admin') return;
+    const np = prompt(email + ' の新しいパスワード（8文字以上）:');
+    if (!np || np.length < 8) { showToast('8文字以上で入力してください', 'error'); return; }
+    const acc = (settings.accounts||[]).find(a => a.email === email);
+    if (acc) { acc.password = np; localStorage.setItem('watchOS_allSettings', JSON.stringify(settings)); showToast('パスワードを変更しました'); }
+}
+ 
+function renderAccountsList() {
+    const el = document.getElementById('accounts-list');
+    if (!el) return;
+    const accounts = settings.accounts || [];
+    el.innerHTML = accounts.map(a => `
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+            <div class="user-avatar" style="width:28px;height:28px;font-size:0.75rem;flex-shrink:0;">${(a.username||a.email).charAt(0).toUpperCase()}</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:0.85rem;font-weight:600;">${a.username||a.email}</div>
+                <div style="font-size:0.72rem;color:var(--text-sub);">${a.email||''}</div>
+            </div>
+            <span class="role-badge ${a.role==='admin'?'role-admin':'role-user'}">${(a.role||'user').toUpperCase()}</span>
+            <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;" onclick="resetPassword('${a.email||a.username}')">PW</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:var(--danger);" onclick="removeAccount('${a.email||a.username}')">削除</button>
+        </div>
+    `).join('') || '<div style="color:var(--text-sub);font-size:0.85rem;padding:8px 0;">アカウントなし</div>';
+}
+ 
+// ---------- 自分のパスワード変更 ----------
+function changePassword() {
+    const cur = document.getElementById('s-cur-password').value;
+    const np  = document.getElementById('s-new-password2').value;
+    const np2 = document.getElementById('s-new-password3').value;
+    if (!cur||!np||!np2) { showToast('全て入力してください','error'); return; }
+    if (np !== np2)      { showToast('新しいパスワードが一致しません','error'); return; }
+    if (np.length < 8)   { showToast('8文字以上にしてください','error'); return; }
+    const acc = (settings.accounts||[]).find(a => a.email===currentUser.email || a.username===currentUser.username);
+    if (!acc || acc.password !== cur) { showToast('現在のパスワードが違います','error'); return; }
+    acc.password = np;
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+    ['s-cur-password','s-new-password2','s-new-password3'].forEach(id => { document.getElementById(id).value=''; });
+    showToast('パスワードを変更しました ✅');
+}
+ 
+// ============================================================
+// SIDEBAR / NAVIGATION
+// ============================================================
+let sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+ 
+function applySidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const main = document.getElementById('main-content');
+    const btn = document.getElementById('toggle-btn');
+    if (sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        main.classList.add('collapsed');
+        btn.textContent = '›';
+    } else {
+        sidebar.classList.remove('collapsed');
+        main.classList.remove('collapsed');
+        btn.textContent = '‹';
+    }
+}
+ 
+function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
+    localStorage.setItem('sidebar-collapsed', sidebarCollapsed);
+    applySidebar();
+}
+ 
+function openMobileSidebar() {
+    document.getElementById('sidebar').classList.add('mobile-open');
+    document.getElementById('sidebar-overlay').classList.add('active');
+}
+ 
+function closeMobileSidebar() {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebar-overlay').classList.remove('active');
+}
+ 
+const PAGE_TITLES = {
+    dashboard: 'ダッシュボード', inventory: '在庫管理', kpi: '月間KPI',
+    analytics: '分析レポート', notes: 'メモ', settings: '設定'
+};
+ 
+function showPage(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    if (btn) btn.classList.add('active');
+    document.getElementById('topbar-title').textContent = PAGE_TITLES[id] || id;
+    location.hash = id;
+    closeMobileSidebar();
+    if (id === 'dashboard') refreshDashboard();
+    if (id === 'kpi') refreshKPI();
+    if (id === 'analytics') refreshAnalytics();
+    if (id === 'settings') renderSettingsUI();
+}
+ 
+// ============================================================
+// API / DATA
+// ============================================================
+async function apiGet(path) {
+    const r = await fetch(API + path);
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+}
+ 
+async function apiPost(path, data) {
+    const r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+}
+ 
+async function apiPut(path, data) {
+    const r = await fetch(API + path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+}
+ 
+async function apiDelete(path) {
+    const r = await fetch(API + path, { method: 'DELETE' });
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+}
+ 
+async function loadInventory() {
+    try {
+        inventory = await apiGet('/inventory');
+        setConnection(true);
+    } catch (e) {
+        inventory = JSON.parse(localStorage.getItem('watchOS_inventory_backup') || '[]');
+        setConnection(false);
+    }
+    renderTable(inventory);
+    refreshDashboard();
+    refreshKPI();
+    refreshAnalytics();
+}
+ 
+function setConnection(online) {
+    document.getElementById('conn-dot').className = 'connection-dot' + (online ? '' : ' offline');
+    document.getElementById('conn-text').textContent = online ? 'オンライン' : 'オフライン';
+}
+ 
+// ============================================================
+// SETTINGS
+// ============================================================
+function loadSettings() {
+    const saved = localStorage.getItem('watchOS_allSettings');
+    settings = saved ? JSON.parse(saved) : { ...DEFAULT_SETTINGS };
+    // merge defaults
+    if (!settings.fees) settings.fees = DEFAULT_SETTINGS.fees;
+    if (!settings.ebay) settings.ebay = DEFAULT_SETTINGS.ebay;
+    if (!settings.accounts) settings.accounts = DEFAULT_SETTINGS.accounts;
+    if (!settings.brands) settings.brands = DEFAULT_SETTINGS.brands;
+}
+ 
+function saveSettings() {
+    settings.toolName = document.getElementById('s-toolname').value || 'Watch OS';
+    settings.displayName = document.getElementById('s-displayname').value;
+    settings.prefix = document.getElementById('s-prefix').value || 'WT';
+    settings.nextNum = parseInt(document.getElementById('s-next').value) || 1;
+    settings.digits = parseInt(document.getElementById('s-digits').value) || 4;
+    settings.salesGoal = parseInt(document.getElementById('s-sales-goal').value) || 500000;
+    settings.profitGoal = parseInt(document.getElementById('s-profit-goal').value) || 150000;
+    settings.qtyGoal = parseInt(document.getElementById('s-qty-goal').value) || 20;
+    settings.fees.mercari = parseFloat(document.getElementById('s-fee-mercari').value) || 10;
+    settings.fees.yahoo = parseFloat(document.getElementById('s-fee-yahoo').value) || 8.8;
+    settings.fees.paypay = parseFloat(document.getElementById('s-fee-paypay').value) || 5;
+    settings.fees.ebay = parseFloat(document.getElementById('s-fee-ebay').value) || 13;
+    settings.ebay.appId = document.getElementById('s-ebay-appid').value;
+    settings.ebay.shipProfileId = document.getElementById('s-ebay-ship').value;
+    settings.ebay.returnProfileId = document.getElementById('s-ebay-return').value;
+    settings.ebay.paymentProfileId = document.getElementById('s-ebay-payment').value;
+    settings.ebay.rate = parseFloat(document.getElementById('s-ebay-rate').value) || 150;
+    settings.ebay.category = document.getElementById('s-ebay-category').value || '281';
+    settings.chatwork = {
+        token: document.getElementById('s-cw-token').value || '',
+        roomId: document.getElementById('s-cw-room').value || ''
+    };
+ 
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+ 
+    // apply name changes immediately
+    document.getElementById('app-name-display').textContent = settings.toolName;
+    document.getElementById('user-display-name').textContent = settings.displayName || sessionStorage.getItem('wos_user');
+    document.title = settings.toolName + ' - 時計物販管理システム';
+ 
+    showToast('設定を保存しました ✅');
+    refreshKPI();
+}
+ 
+function renderSettingsUI() {
+    // ADMIN専用セクション表示制御（CSSで対応済みだが念のため）
+    const isAdmin = currentUser?.role === 'admin';
+    document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = isAdmin ? 'block' : 'none';
+    });
+    document.getElementById('s-toolname').value = settings.toolName || '';
+    document.getElementById('s-displayname').value = settings.displayName || '';
+    document.getElementById('s-prefix').value = settings.prefix || 'WT';
+    document.getElementById('s-next').value = settings.nextNum || 1;
+    document.getElementById('s-digits').value = settings.digits || 4;
+    document.getElementById('s-sales-goal').value = settings.salesGoal || 500000;
+    document.getElementById('s-profit-goal').value = settings.profitGoal || 150000;
+    document.getElementById('s-qty-goal').value = settings.qtyGoal || 20;
+    document.getElementById('s-fee-mercari').value = settings.fees?.mercari || 10;
+    document.getElementById('s-fee-yahoo').value = settings.fees?.yahoo || 8.8;
+    document.getElementById('s-fee-paypay').value = settings.fees?.paypay || 5;
+    document.getElementById('s-fee-ebay').value = settings.fees?.ebay || 13;
+    document.getElementById('s-ebay-appid').value = settings.ebay?.appId || '';
+    document.getElementById('s-ebay-ship').value = settings.ebay?.shipProfileId || '';
+    document.getElementById('s-ebay-return').value = settings.ebay?.returnProfileId || '';
+    document.getElementById('s-ebay-payment').value = settings.ebay?.paymentProfileId || '';
+    document.getElementById('s-ebay-rate').value = settings.ebay?.rate || 150;
+    document.getElementById('s-ebay-category').value = settings.ebay?.category || '281';
+    document.getElementById('s-cw-token').value  = settings.chatwork?.token  || '';
+    document.getElementById('s-cw-room').value   = settings.chatwork?.roomId || '';
+    renderBrandList();
+    renderAccountsList();
+    updateIdPreview();
+}
+ 
+// id preview
+['s-prefix','s-next','s-digits'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateIdPreview);
+});
+ 
+function updateIdPreview() {
+    const prefix = document.getElementById('s-prefix')?.value || 'WT';
+    const next = parseInt(document.getElementById('s-next')?.value) || 1;
+    const digits = parseInt(document.getElementById('s-digits')?.value) || 4;
+    document.getElementById('id-preview').textContent = prefix + String(next).padStart(digits, '0');
+}
+ 
+function generateId() {
+    const id = settings.prefix + String(settings.nextNum).padStart(settings.digits, '0');
+    settings.nextNum++;
+    localStorage.setItem('watchOS_allSettings', JSON.stringify(settings));
+    return id;
+}
+ 
+// brands
+function renderBrandList() {
+    const el = document.getElementById('brand-list');
+    el.innerHTML = (settings.brands || []).map(b =>
+        `<div class="brand-tag">${b}<button onclick="removeBrand('${b}')">×</button></div>`
+    ).join('');
+    // update form select
+    const sel = document.getElementById('f-brand');
+    if (sel) {
+        sel.innerHTML = '<option value="">選択...</option>' +
+            (settings.brands || []).map(b => `<option>${b}</option>`).join('');
+    }
+}
+ 
+function addBrand() {
+    const v = document.getElementById('s-new-brand').value.trim();
+    if (!v) return;
+    if (!settings.brands) settings.brands = [];
+    if (!settings.brands.includes(v)) settings.brands.push(v);
+    document.getElementById('s-new-brand').value = '';
+    renderBrandList();
+}
+ 
+function removeBrand(name) {
+    settings.brands = (settings.brands || []).filter(b => b !== name);
+    renderBrandList();
+}
+ 
+// ============================================================
+// INVENTORY TABLE
+// ============================================================
+function calcProfit(item) {
+    if (!item.sale_price || item.status !== '売却済') return null;
+    const fee = getFeeRate(item.platform);
+    const feeAmt = item.sale_price * fee / 100;
+    return item.sale_price - item.purchase_price - (item.shipping_fee || 0) - (item.other_cost || 0) - feeAmt;
+}
+ 
+function getFeeRate(platform) {
+    const fees = settings.fees || DEFAULT_SETTINGS.fees;
+    if (!platform) return 10;
+    const p = platform.toLowerCase();
+    if (p.includes('メルカリ') || p.includes('mercari')) return fees.mercari;
+    if (p.includes('ヤフオク') || p.includes('yahoo')) return fees.yahoo;
+    if (p.includes('paypay') || p.includes('ペイペイ')) return fees.paypay;
+    if (p.includes('ebay')) return fees.ebay;
+    return 10;
+}
+ 
+function calcDays(item) {
+    if (!item.list_date || !item.sale_date) return null;
+    const d = (new Date(item.sale_date) - new Date(item.list_date)) / 86400000;
+    return Math.round(d);
+}
+ 
+function statusBadge(s) {
+    const cls = s === '出品中' ? 'badge-listing' : s === '売却済' ? 'badge-sold' : s === '在庫' ? 'badge-stock' : 'badge-other';
+    return `<span class="status-badge ${cls}">${s}</span>`;
+}
+ 
+function renderTable(data) {
+    const tbody = document.getElementById('inventory-body');
+    tbody.innerHTML = data.map(item => {
+        const profit = calcProfit(item);
+        const days = calcDays(item);
+        const profitHtml = profit !== null
+            ? `<span class="${profit >= 0 ? 'profit-pos' : 'profit-neg'}">¥${Math.round(profit).toLocaleString()}</span>`
+            : '<span style="color:var(--text-sub)">-</span>';
+        return `<tr class="${item.status === '売却済' ? 'row-sold' : ''}">
+            <td class="watch-id">${item.watch_id || '-'}</td>
+            <td>${item.brand || '-'}</td>
+            <td>${item.model || '-'}</td>
+            <td>${item.condition || '-'}</td>
+            <td>${item.mercari_url ? `<a href="${item.mercari_url}" target="_blank" style="color:var(--primary);">🔗</a>` : '-'}</td>
+            <td>${item.list_date || '-'}</td>
+            <td>¥${(item.purchase_price||0).toLocaleString()}</td>
+            <td>¥${(item.shipping_fee||0).toLocaleString()}</td>
+            <td>¥${(item.other_cost||0).toLocaleString()}</td>
+            <td>${item.platform || '-'}</td>
+            <td>${statusBadge(item.status || '-')}</td>
+            <td>${item.sale_url ? `<a href="${item.sale_url}" target="_blank" style="color:var(--primary);">🔗</a>` : '-'}</td>
+            <td>${item.sale_date || '-'}</td>
+            <td>${item.sale_price ? '¥' + item.sale_price.toLocaleString() : '-'}</td>
+            <td>${days !== null ? days + '日' : '-'}</td>
+            <td>${profitHtml}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editItem('${item.id}')">✏️</button>
+                <button class="btn btn-sm" style="background:#fee2e2;color:var(--danger);margin-left:4px;" onclick="deleteItem('${item.id}')">🗑️</button>
+                <button class="btn btn-sm" style="background:#f0fdf4;color:var(--success);margin-left:4px;" onclick="openEbayModal('${item.id}')">eBay</button>
+            </td>
+        </tr>`;
+    }).join('') || `<tr><td colspan="17" style="padding:30px;color:var(--text-sub);">データがありません</td></tr>`;
+}
+ 
+function filterTable(q) {
+    const filtered = inventory.filter(i =>
+        [i.brand, i.model, i.status, i.watch_id, i.platform].some(v => (v||'').toLowerCase().includes(q.toLowerCase()))
+    );
+    renderTable(filtered);
+}
+ 
+function filterByStatus(s) {
+    renderTable(s ? inventory.filter(i => i.status === s) : inventory);
+}
+ 
+function sortTable(key) {
+    if (sortKey === key) sortAsc = !sortAsc;
+    else { sortKey = key; sortAsc = true; }
+    inventory.sort((a, b) => {
+        let va = a[key] || '', vb = b[key] || '';
+        if (typeof va === 'number') return sortAsc ? va - vb : vb - va;
+        return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+    renderTable(inventory);
+}
+ 
+// ============================================================
+// ADD / EDIT FORM
+// ============================================================
+function toggleAddForm() {
+    const f = document.getElementById('add-form');
+    if (f.classList.contains('open')) {
+        cancelForm();
+    } else {
+        f.classList.add('open');
+        editingId = null;
+        document.getElementById('form-mode-label').textContent = '新規商品追加';
+        document.getElementById('f-id').value = generateId();
+        document.getElementById('f-listdate').value = new Date().toISOString().split('T')[0];
+        renderBrandList();
+        ['f-model','f-url','f-saleurl','f-saledate','f-price'].forEach(id => document.getElementById(id).value = '');
+        ['f-cost','f-shipping','f-other'].forEach(id => document.getElementById(id).value = '0');
+    }
+}
+ 
+function cancelForm() {
+    document.getElementById('add-form').classList.remove('open');
+    editingId = null;
+}
+ 
+function editItem(id) {
+    const item = inventory.find(i => String(i.id) === String(id));
+    if (!item) return;
+    editingId = id;
+    const f = document.getElementById('add-form');
+    f.classList.add('open');
+    document.getElementById('form-mode-label').textContent = '商品編集: ' + item.watch_id;
+    renderBrandList();
+    document.getElementById('f-id').value = item.watch_id || '';
+    document.getElementById('f-brand').value = item.brand || '';
+    document.getElementById('f-model').value = item.model || '';
+    document.getElementById('f-condition').value = item.condition || '稼働品';
+    document.getElementById('f-listdate').value = item.list_date || '';
+    document.getElementById('f-cost').value = item.purchase_price || 0;
+    document.getElementById('f-shipping').value = item.shipping_fee || 0;
+    document.getElementById('f-other').value = item.other_cost || 0;
+    document.getElementById('f-platform').value = item.platform || 'メルカリ';
+    document.getElementById('f-url').value = item.mercari_url || '';
+    document.getElementById('f-status').value = item.status || '出品中';
+    document.getElementById('f-saleurl').value = item.sale_url || '';
+    document.getElementById('f-saledate').value = item.sale_date || '';
+    document.getElementById('f-price').value = item.sale_price || '';
+    f.scrollIntoView({ behavior: 'smooth' });
+}
+ 
+async function saveItem() {
+    const data = {
+        watch_id: document.getElementById('f-id').value,
+        brand: document.getElementById('f-brand').value,
+        model: document.getElementById('f-model').value,
+        condition: document.getElementById('f-condition').value,
+        list_date: document.getElementById('f-listdate').value,
+        purchase_price: parseFloat(document.getElementById('f-cost').value) || 0,
+        shipping_fee: parseFloat(document.getElementById('f-shipping').value) || 0,
+        other_cost: parseFloat(document.getElementById('f-other').value) || 0,
+        platform: document.getElementById('f-platform').value,
+        mercari_url: document.getElementById('f-url').value,
+        status: document.getElementById('f-status').value,
+        sale_url: document.getElementById('f-saleurl').value,
+        sale_date: document.getElementById('f-saledate').value,
+        sale_price: parseFloat(document.getElementById('f-price').value) || 0
+    };
+    try {
+        if (editingId) {
+            await apiPut('/inventory/' + editingId, data);
+        } else {
+            await apiPost('/inventory', data);
+        }
+        cancelForm();
+        await loadInventory(); // ← 全タブに即時反映
+        showToast(editingId ? '更新しました ✅' : '追加しました ✅');
+    } catch (e) {
+        showToast('保存に失敗しました', 'error');
+    }
+}
+ 
+async function deleteItem(id) {
+    if (!confirm('削除しますか？')) return;
+    try {
+        await apiDelete('/inventory/' + id);
+        await loadInventory(); // ← 全タブに即時反映
+        showToast('削除しました');
+    } catch (e) {
+        showToast('削除に失敗しました', 'error');
+    }
+}
+ 
+// ============================================================
+// ============================================================
+// DASHBOARD - 在庫データから即時反映
+// ============================================================
+function getThisMonthItems() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    return inventory.filter(i => {
+        if (!i.sale_date) return false;
+        const d = new Date(i.sale_date);
+        return d.getFullYear() === y && d.getMonth() === m && i.status === '売却済';
+    });
+}
+ 
+function getMonthItems(offsetMonths) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - offsetMonths);
+    const y = d.getFullYear(), m = d.getMonth();
+    return inventory.filter(i => {
+        if (!i.sale_date || i.status !== '売却済') return false;
+        const dd = new Date(i.sale_date);
+        return dd.getFullYear() === y && dd.getMonth() === m;
+    });
+}
+ 
+function refreshDashboard() {
+    const sold = getThisMonthItems();
+    const allSold = inventory.filter(i => i.status === '売却済');
+    const listed = inventory.filter(i => i.status === '出品中');
+ 
+    const totalSales  = sold.reduce((s, i) => s + (i.sale_price||0), 0);
+    const totalProfit = sold.reduce((s, i) => s + (calcProfit(i)||0), 0);
+    const qty = sold.length;
+    const days = allSold.map(i => calcDays(i)).filter(d => d !== null);
+    const avgDays = days.length ? Math.round(days.reduce((a,b)=>a+b,0)/days.length) : 0;
+    const rate = inventory.length ? Math.round(allSold.length / inventory.length * 100) : 0;
+    const margin = totalSales > 0 ? Math.round(totalProfit / totalSales * 100) : 0;
+ 
+    // top brand by sales
+    const brandSales = {};
+    allSold.forEach(i => { if (i.brand) brandSales[i.brand] = (brandSales[i.brand]||0) + (i.sale_price||0); });
+    const topEntry = Object.entries(brandSales).sort((a,b)=>b[1]-a[1])[0];
+ 
+    // KPIカード更新
+    document.getElementById('d-sales').textContent = '¥' + totalSales.toLocaleString();
+    document.getElementById('d-profit').textContent = '¥' + Math.round(totalProfit).toLocaleString();
+    document.getElementById('d-qty').textContent = qty + '件';
+    document.getElementById('d-days').textContent = avgDays + '日';
+    document.getElementById('d-total').textContent = inventory.length;
+    document.getElementById('d-listed-sub').textContent = `出品中 ${listed.length}件 / 在庫 ${inventory.filter(i=>i.status==='在庫').length}件`;
+    document.getElementById('d-brand').textContent = topEntry ? topEntry[0] : '-';
+    document.getElementById('d-brand-sub').textContent = topEntry ? '¥' + topEntry[1].toLocaleString() : '売上トップ';
+ 
+    // 利益率バッジ
+    const mb = document.getElementById('d-margin-badge');
+    mb.textContent = `利益率 ${margin}%`;
+    mb.className = 'dkc-badge ' + (margin >= 20 ? 'up' : margin >= 0 ? 'neu' : 'down');
+ 
+    // 成功率バッジ
+    const rb = document.getElementById('d-rate-badge');
+    rb.textContent = `成功率 ${rate}%`;
+    rb.className = 'dkc-badge ' + (rate >= 50 ? 'up' : 'neu');
+ 
+    // スパークライン（過去6ヶ月の売上）
+    const sparkData = [];
+    for (let i = 5; i >= 0; i--) sparkData.push(getMonthItems(i).reduce((s,it)=>s+(it.sale_price||0),0));
+    renderSparkline('spark-sales', sparkData);
+ 
+    // 直近5件
+    const recent = [...allSold].sort((a,b) => new Date(b.sale_date)-new Date(a.sale_date)).slice(0,5);
+    const tbody = document.getElementById('dash-recent-body');
+    if (recent.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-sub);text-align:center;padding:20px;">データなし</td></tr>';
+    } else {
+        tbody.innerHTML = recent.map(i => {
+            const p = calcProfit(i);
+            const d = calcDays(i);
+            return `<tr>
+                <td style="font-weight:700;color:var(--primary);">${i.watch_id||'-'}</td>
+                <td>${i.brand||''} ${i.model||''}</td>
+                <td>${i.platform||'-'}</td>
+                <td>¥${(i.sale_price||0).toLocaleString()}</td>
+                <td class="${p>=0?'profit-pos':'profit-neg'}">¥${Math.round(p||0).toLocaleString()}</td>
+                <td>${i.sale_date||'-'}</td>
+                <td>${d!==null?d+'日':'-'}</td>
+            </tr>`;
+        }).join('');
+    }
+ 
+    renderDashboardCharts();
+}
+ 
+function renderSparkline(id, data) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const max = Math.max(...data, 1);
+    el.innerHTML = data.map((v, i) =>
+        `<div class="dash-spark-bar ${i===data.length-1?'active':''}" style="height:${Math.round(v/max*100)}%;"></div>`
+    ).join('');
+}
+ 
+function renderDashboardCharts() {
+    // === 月別売上・利益（過去6ヶ月）===
+    const months = [], salesData = [], profitData = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(); d.setMonth(d.getMonth()-i);
+        months.push((d.getMonth()+1)+'月');
+        const items = getMonthItems(i);
+        salesData.push(items.reduce((s,it)=>s+(it.sale_price||0),0));
+        profitData.push(items.reduce((s,it)=>s+(calcProfit(it)||0),0));
+    }
+    renderChart('chart-monthly', 'bar', {
+        labels: months,
+        datasets: [
+            { label: '売上', data: salesData, backgroundColor: '#3b82f6cc', borderRadius: 4 },
+            { label: '利益', data: profitData, backgroundColor: '#10b981cc', borderRadius: 4 }
+        ]
+    }, {
+        scales: {
+            y: { ticks: { font:{size:10}, callback: v => '¥'+v.toLocaleString() }, grid: { color:'#f1f5f9' } },
+            x: { ticks: { font:{size:11} }, grid: { display:false } }
+        }
+    });
+ 
+    // === ブランド別売上（ドーナツ）===
+    const brandSales = {};
+    inventory.filter(i=>i.status==='売却済').forEach(i => {
+        if (i.brand) brandSales[i.brand] = (brandSales[i.brand]||0)+(i.sale_price||0);
+    });
+    const bEntries = Object.entries(brandSales).sort((a,b)=>b[1]-a[1]).slice(0,7);
+    const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f43f5e'];
+    renderChart('chart-brand', 'doughnut', {
+        labels: bEntries.map(e=>e[0]),
+        datasets: [{ data: bEntries.map(e=>e[1]), backgroundColor: COLORS, borderWidth: 2, borderColor:'#fff' }]
+    }, { cutout:'60%' });
+ 
+    // === ステータス内訳（水平バー）===
+    const statusCounts = { '出品中':0, '売却済':0, '在庫':0, '破損':0 };
+    inventory.forEach(i => { if (statusCounts[i.status]!==undefined) statusCounts[i.status]++; });
+    renderChart('chart-status', 'bar', {
+        labels: Object.keys(statusCounts),
+        datasets: [{
+            data: Object.values(statusCounts),
+            backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444'],
+            borderRadius: 4
+        }]
+    }, {
+        indexAxis: 'y',
+        scales: {
+            x: { ticks:{font:{size:10}}, grid:{color:'#f1f5f9'} },
+            y: { ticks:{font:{size:11}}, grid:{display:false} }
+        },
+        plugins: { legend:{ display:false } }
+    });
+ 
+    // === プラットフォーム別利益（ドーナツ）===
+    const platProfit = {};
+    inventory.filter(i=>i.status==='売却済').forEach(i => {
+        const p = i.platform||'その他';
+        platProfit[p] = (platProfit[p]||0)+(calcProfit(i)||0);
+    });
+    const pEntries = Object.entries(platProfit).sort((a,b)=>b[1]-a[1]);
+    renderChart('chart-platform', 'doughnut', {
+        labels: pEntries.map(e=>e[0]),
+        datasets: [{ data: pEntries.map(e=>Math.max(0,e[1])), backgroundColor: COLORS, borderWidth:2, borderColor:'#fff' }]
+    }, { cutout:'55%' });
+ 
+    // === 月別利益率推移（ライン）===
+    const marginData = [];
+    for (let i = 5; i >= 0; i--) {
+        const items = getMonthItems(i);
+        const s = items.reduce((a,it)=>a+(it.sale_price||0),0);
+        const p = items.reduce((a,it)=>a+(calcProfit(it)||0),0);
+        marginData.push(s>0 ? Math.round(p/s*100) : 0);
+    }
+    renderChart('chart-margin', 'line', {
+        labels: months,
+        datasets: [{
+            label: '利益率%', data: marginData,
+            borderColor: '#8b5cf6', backgroundColor: '#8b5cf620',
+            fill: true, tension: 0.4, pointRadius: 4,
+            pointBackgroundColor: '#8b5cf6', borderWidth: 2
+        }]
+    }, {
+        scales: {
+            y: { ticks:{ font:{size:10}, callback: v=>v+'%' }, min:0, grid:{color:'#f1f5f9'} },
+            x: { ticks:{font:{size:11}}, grid:{display:false} }
+        },
+        plugins: { legend:{ display:false } }
+    });
+}
+ 
+function renderChart(id, type, data, extraOpts = {}) {
+    if (charts[id]) { charts[id].destroy(); }
+    const ctx = document.getElementById(id)?.getContext('2d');
+    if (!ctx) return;
+    const { scales, plugins: pluginOpts, ...rest } = extraOpts;
+    charts[id] = new Chart(ctx, {
+        type,
+        data,
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: ['doughnut','pie','line'].includes(type),
+                    position: 'bottom',
+                    labels: { font:{size:11}, boxWidth:12, padding:10 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const v = ctx.parsed.y ?? ctx.parsed;
+                            if (typeof v === 'number' && v > 1000) return ' ¥' + Math.round(v).toLocaleString();
+                            return ' ' + v;
+                        }
+                    }
+                },
+                ...pluginOpts
+            },
+            scales: scales || (type === 'bar' ? {
+                y: { ticks:{font:{size:10}}, grid:{color:'#f1f5f9'} },
+                x: { ticks:{font:{size:10}}, grid:{display:false} }
+            } : {}),
+            ...rest
+        }
+    });
+}
+ 
+// ============================================================
+// KPI - 在庫データから即時反映
+// ============================================================
+function refreshKPI() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    document.getElementById('kpi-month-label').textContent =
+        `📈 月間KPI - ${y}年${m+1}月`;
+ 
+    const sold = getThisMonthItems();
+    const totalSales = sold.reduce((s, i) => s + (i.sale_price||0), 0);
+    const totalProfit = sold.reduce((s, i) => s + (calcProfit(i)||0), 0);
+    const qty = sold.length;
+ 
+    const sg = settings.salesGoal || 500000;
+    const pg = settings.profitGoal || 150000;
+    const qg = settings.qtyGoal || 20;
+ 
+    const sPct = Math.min(100, Math.round(totalSales / sg * 100));
+    const pPct = Math.min(100, Math.round(totalProfit / pg * 100));
+    const qPct = Math.min(100, Math.round(qty / qg * 100));
+ 
+    document.getElementById('k-sales').textContent = '¥' + totalSales.toLocaleString();
+    document.getElementById('k-sales-goal').textContent = '目標: ¥' + sg.toLocaleString();
+    document.getElementById('k-sales-bar').style.width = sPct + '%';
+    document.getElementById('k-sales-pct').textContent = sPct + '% 達成';
+ 
+    document.getElementById('k-profit').textContent = '¥' + Math.round(totalProfit).toLocaleString();
+    document.getElementById('k-profit-goal').textContent = '目標: ¥' + pg.toLocaleString();
+    document.getElementById('k-profit-bar').style.width = pPct + '%';
+    document.getElementById('k-profit-pct').textContent = pPct + '% 達成';
+ 
+    document.getElementById('k-qty').textContent = qty;
+    document.getElementById('k-qty-goal').textContent = '目標: ' + qg + '個';
+    document.getElementById('k-qty-bar').style.width = qPct + '%';
+    document.getElementById('k-qty-pct').textContent = qPct + '% 達成';
+}
+ 
+// ============================================================
+// ANALYTICS - 在庫データから即時反映
+// ============================================================
+function refreshAnalytics() {
+    const sold = inventory.filter(i => i.status === '売却済');
+ 
+    // best seller
+    const best = sold.reduce((best, i) => {
+        const p = calcProfit(i) || 0;
+        return p > (calcProfit(best)||0) ? i : best;
+    }, sold[0]);
+    document.getElementById('a-best').textContent = best ? `${best.brand||''} ${best.model||''}`.trim() || '-' : '-';
+ 
+    // avg margin
+    const margins = sold.filter(i => i.sale_price).map(i => (calcProfit(i)||0) / i.sale_price * 100);
+    const avgMargin = margins.length ? margins.reduce((a,b)=>a+b,0)/margins.length : 0;
+    document.getElementById('a-margin').textContent = Math.round(avgMargin) + '%';
+ 
+    // fastest sale
+    const days = sold.map(i => calcDays(i)).filter(d => d !== null);
+    document.getElementById('a-fast').textContent = days.length ? Math.min(...days) + '日' : '0日';
+ 
+    // turnover
+    const now = new Date();
+    const thisMonth = sold.filter(i => {
+        if (!i.sale_date) return false;
+        const d = new Date(i.sale_date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+    const avgInventory = inventory.length || 1;
+    document.getElementById('a-turn').textContent = (thisMonth.length / avgInventory).toFixed(1) + '回';
+ 
+    // Charts
+    // Brand profit
+    const brandProfit = {};
+    sold.forEach(i => {
+        if (i.brand) brandProfit[i.brand] = (brandProfit[i.brand]||0) + (calcProfit(i)||0);
+    });
+    const bpEntries = Object.entries(brandProfit).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    renderChart('chart-brand-profit', 'bar', {
+        labels: bpEntries.map(e=>e[0]),
+        datasets:[{label:'利益',data:bpEntries.map(e=>e[1]),backgroundColor:'#3b82f688'}]
+    });
+ 
+    // Platform sales
+    const platSales = {};
+    sold.forEach(i => { const p=i.platform||'その他'; platSales[p]=(platSales[p]||0)+(i.sale_price||0); });
+    const psEntries = Object.entries(platSales);
+    renderChart('chart-platform2', 'doughnut', {
+        labels: psEntries.map(e=>e[0]),
+        datasets:[{data:psEntries.map(e=>e[1]),backgroundColor:['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6']}]
+    });
+}
+ 
+// ============================================================
+// NOTES
+// ============================================================
+function loadNotes() {
+    notes = JSON.parse(localStorage.getItem('watchOS_notes') || '[]');
+    renderNotes();
+}
+ 
+function renderNotes() {
+    const grid = document.getElementById('notes-grid');
+    grid.innerHTML = notes.map((n, i) => `
+        <div class="note-card" style="background:${n.color};border:1px solid rgba(0,0,0,0.08);">
+            <button class="note-del" onclick="deleteNote(${i})">✕</button>
+            <textarea onchange="updateNote(${i}, this.value)">${n.text}</textarea>
+        </div>
+    `).join('') || `<div style="color:var(--text-sub);font-size:0.85rem;">上の色ボタンで付箋を追加できます</div>`;
+}
+ 
+function addNote(color) {
+    notes.push({ color, text: '' });
+    localStorage.setItem('watchOS_notes', JSON.stringify(notes));
+    renderNotes();
+}
+ 
+function updateNote(i, text) {
+    notes[i].text = text;
+    localStorage.setItem('watchOS_notes', JSON.stringify(notes));
+}
+ 
+function deleteNote(i) {
+    notes.splice(i, 1);
+    localStorage.setItem('watchOS_notes', JSON.stringify(notes));
+    renderNotes();
+}
+ 
+// ============================================================
+// eBay
+// ============================================================
+function openEbayModal(id) {
+    const item = inventory.find(i => String(i.id) === String(id));
+    if (!item) return;
+    currentEbayItem = item;
+    const title = `${item.brand||''} ${item.model||''} ${item.condition||''}`.trim();
+    document.getElementById('ebay-title').value = title;
+    document.getElementById('ebay-price').value = '';
+    document.getElementById('ebay-desc').value = '';
+    document.getElementById('ebay-jpy-ref').textContent = '価格を入力すると表示';
+    document.getElementById('ebay-modal').classList.add('open');
+}
+ 
+function closeEbayModal() {
+    document.getElementById('ebay-modal').classList.remove('open');
+    currentEbayItem = null;
+}
+ 
+document.getElementById('ebay-price').addEventListener('input', function() {
+    const usd = parseFloat(this.value);
+    const rate = settings.ebay?.rate || 150;
+    if (usd && usd > 0) {
+        document.getElementById('ebay-jpy-ref').textContent = '≒ ¥' + Math.round(usd * rate).toLocaleString() + '（$1 = ¥' + rate + '）';
+    } else {
+        document.getElementById('ebay-jpy-ref').textContent = '価格を入力すると表示';
+    }
+});
+ 
+async function submitEbay() {
+    const price = parseFloat(document.getElementById('ebay-price').value);
+    const desc = document.getElementById('ebay-desc').value.trim();
+    const title = document.getElementById('ebay-title').value.trim();
+    if (!price || !desc) { showToast('価格と説明文は必須です', 'error'); return; }
+    if (!currentEbayItem) return;
+ 
+    try {
+        const payload = {
+            title,
+            description: desc,
+            price_usd: price,
+            brand: currentEbayItem.brand || 'Unbranded',
+            // auto-filled from settings
+            app_id: settings.ebay?.appId,
+            shipping_profile_id: settings.ebay?.shipProfileId,
+            return_profile_id: settings.ebay?.returnProfileId,
+            payment_profile_id: settings.ebay?.paymentProfileId,
+            category_id: settings.ebay?.category || '281'
+        };
+        const res = await apiPost('/ebay-auto-list', payload);
+        if (res.item_id) {
+            // update sale_url in inventory
+            await apiPut('/inventory/' + currentEbayItem.id, {
+                ...currentEbayItem,
+                sale_url: `https://ebay.com/itm/${res.item_id}`,
+                platform: 'eBay',
+                status: '出品中'
+            });
+            await loadInventory();
+            showToast('eBayに出品しました ✅');
+            closeEbayModal();
+        }
+    } catch (e) {
+        showToast('eBay出品に失敗しました: ' + e.message, 'error');
+    }
+}
+ 
+// close modal on overlay click
+document.getElementById('ebay-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeEbayModal();
+});
+ 
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+ 
+// ============================================================
+// INIT
+// ============================================================
+async function initApp() {
+    applySidebar();
+    loadSettings();
+    renderBrandList();
+    loadNotes();
+    await loadInventory();
+ 
+    // handle hash navigation
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+        const btn = [...document.querySelectorAll('.menu-item')].find(b => b.getAttribute('onclick')?.includes("'" + hash + "'"));
+        if (btn) showPage(hash, btn);
+    }
+ 
+    // connection check every 30s
+    setInterval(async () => {
+        try { await apiGet('/inventory'); setConnection(true); } catch { setConnection(false); }
+    }, 30000);
+}
+ 
+// Start
+initAuth();
 </script>
 </body>
 </html>
