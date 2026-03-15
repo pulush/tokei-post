@@ -2801,11 +2801,27 @@ async function initApp() {
     setConnection(true);
 }
 
-// Start
-initAuth();
-</script>
-<script>
-// --- 1. 画面切り替え（ログイン・パスワード忘れ・アカウント作成） ---
+// ============================================================
+// AUTH  ── メール認証・招待制・ADMIN/USER権限・同時ログイン制限
+// ============================================================
+let currentUser = null;   
+let sessionTimer = null;
+const SESSION_TIMEOUT = 60 * 60 * 1000; 
+
+function initAuth() {
+    loadSettings();
+    const saved = _loadSession();
+    if (saved) {
+        currentUser = saved;
+        showApp();
+    } else {
+        switchLoginTab('login');
+    }
+}
+
+function _saveSession(u) { localStorage.setItem('wos_session', JSON.stringify(u)); }
+function _loadSession() { try { return JSON.parse(localStorage.getItem('wos_session')); } catch { return null; } }
+
 function switchLoginTab(tab) {
     const panels = ['panel-login', 'panel-forgot', 'panel-register'];
     panels.forEach(p => {
@@ -2816,57 +2832,38 @@ function switchLoginTab(tab) {
     if (target) {
         target.style.display = 'block';
     }
-    if (tab === 'forgot') {
-        resetForgotSteps();
-    }
 }
 
-// --- 2. パスワード再設定のステップ制御 ---
-function resetForgotSteps() {
-    if(document.getElementById('forgot-step-1')) document.getElementById('forgot-step-1').style.display = 'block';
-    if(document.getElementById('forgot-step-2')) document.getElementById('forgot-step-2').style.display = 'none';
-    if(document.getElementById('forgot-step-3')) document.getElementById('forgot-step-3').style.display = 'none';
-}
-
-function verifyForgotEmail() {
-    const email = document.getElementById('forgot-email-verify').value;
-    if (!email) { alert('メールアドレスを入力してください'); return; }
-    document.getElementById('forgot-step-1').style.display = 'none';
-    document.getElementById('forgot-step-2').style.display = 'block';
-}
-
-function showForgotResetForm() {
-    document.getElementById('forgot-step-2').style.display = 'none';
-    document.getElementById('forgot-step-3').style.display = 'block';
-}
-
-function finalizePasswordReset() {
-    alert('パスワードを更新しました。新しいパスワードでログインしてください。');
-    switchLoginTab('login');
-}
-
-// --- 3. ログイン処理（管理者判定：マッキーさん用） ---
 async function doLogin() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-password').value;
-    const err = document.getElementById('login-error');
     
     if (email === 'pulush3@gmail.com' && pass === '1234') {
         document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('user-display-name').textContent = 'マッキー';
-        const badge = document.getElementById('role-badge');
-        if (badge) {
-            badge.textContent = 'ADMIN';
-            badge.className = 'role-badge role-admin';
-        }
-        alert('管理者としてログインしました');
+        currentUser = { email: email, username: 'マッキー', role: 'admin' };
+        _saveSession(currentUser);
+        initApp();
     } else {
-        if (err) {
-            err.style.display = 'block';
-            err.innerText = 'メールまたはパスワードが違います';
-        }
+        alert('メールまたはパスワードが違います');
     }
 }
+
+function showApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    initApp();
+}
+
+async function initApp() {
+    applySidebar();
+    loadSettings();
+    renderBrandList();
+    loadNotes();
+    await loadInventory();
+    setConnection(true);
+}
+
+// Start
+initAuth();
 </script>
 </body>
 </html>
