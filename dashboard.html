@@ -2801,69 +2801,91 @@ async function initApp() {
     setConnection(true);
 }
 
-// ============================================================
-// AUTH  ── メール認証・招待制・ADMIN/USER権限・同時ログイン制限
-// ============================================================
-let currentUser = null;   
-let sessionTimer = null;
-const SESSION_TIMEOUT = 60 * 60 * 1000; 
+// Start
+initAuth();
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// --- 1. 状態管理 ---
+let inventory = [];
+let settings = {};
+let notes = [];
+let charts = {};
 
+const _session = {
+    save: (u) => localStorage.setItem('wos_session', JSON.stringify(u)),
+    load: () => { try { return JSON.parse(localStorage.getItem('wos_session')); } catch { return null; } },
+    clear: () => localStorage.removeItem('wos_session')
+};
+
+// --- 2. ログイン・画面切り替え ---
+function switchLoginTab(tab) {
+    const panels = ['panel-login', 'panel-forgot', 'panel-register'];
+    panels.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    const target = document.getElementById('panel-' + tab);
+    if (target) target.style.display = 'block';
+}
+
+function doLogin() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    const err = document.getElementById('login-error');
+
+    // マッキーさんのログイン情報（管理者）
+    if (email === 'pulush3@gmail.com' && pass === '1234') {
+        const user = { email: email, username: 'マッキー', role: 'admin' };
+        _session.save(user);
+        launchApp();
+    } else {
+        if (err) {
+            err.textContent = 'メールまたはパスワードが違います';
+            err.style.display = 'block';
+        }
+    }
+}
+
+function doLogout() {
+    if(confirm('ログアウトしますか？')) {
+        _session.clear();
+        location.reload();
+    }
+}
+
+// --- 3. アプリ起動とデータロード ---
+async function launchApp() {
+    const loginScreen = document.getElementById('login-screen');
+    if (loginScreen) loginScreen.style.display = 'none';
+
+    // データの読み込み
+    inventory = JSON.parse(localStorage.getItem('watchOS_inventory_backup') || '[]');
+    settings = JSON.parse(localStorage.getItem('watchOS_allSettings') || '{}');
+    notes = JSON.parse(localStorage.getItem('watchOS_notes') || '[]');
+
+    // マッキーさんの元の機能を実行
+    if (typeof renderTable === 'function') renderTable(inventory);
+    if (typeof renderBrandList === 'function') renderBrandList();
+    if (typeof renderNotes === 'function') renderNotes();
+    if (typeof refreshDashboard === 'function') refreshDashboard();
+
+    // 最初のページを表示
+    showPage('dashboard', document.querySelector('.menu-item'));
+}
+
+// --- 4. 初期化処理 ---
 function initAuth() {
-    loadSettings();
-    const saved = _loadSession();
-    if (saved) {
-        currentUser = saved;
-        showApp();
+    const saved = _session.load();
+    // すでにマッキーさんとしてログイン済みなら即起動
+    if (saved && saved.email === 'pulush3@gmail.com') {
+        launchApp();
     } else {
         switchLoginTab('login');
     }
 }
 
-function _saveSession(u) { localStorage.setItem('wos_session', JSON.stringify(u)); }
-function _loadSession() { try { return JSON.parse(localStorage.getItem('wos_session')); } catch { return null; } }
-
-function switchLoginTab(tab) {
-    const panels = ['panel-login', 'panel-forgot', 'panel-register'];
-    panels.forEach(p => {
-        const el = document.getElementById(p);
-        if (el) el.style.display = 'none';
-    });
-    const target = document.getElementById('panel-' + tab);
-    if (target) {
-        target.style.display = 'block';
-    }
-}
-
-async function doLogin() {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
-    
-    if (email === 'pulush3@gmail.com' && pass === '1234') {
-        document.getElementById('login-screen').classList.add('hidden');
-        currentUser = { email: email, username: 'マッキー', role: 'admin' };
-        _saveSession(currentUser);
-        initApp();
-    } else {
-        alert('メールまたはパスワードが違います');
-    }
-}
-
-function showApp() {
-    document.getElementById('login-screen').classList.add('hidden');
-    initApp();
-}
-
-async function initApp() {
-    applySidebar();
-    loadSettings();
-    renderBrandList();
-    loadNotes();
-    await loadInventory();
-    setConnection(true);
-}
-
-// Start
-initAuth();
+// ページ読み込み時に実行
+document.addEventListener('DOMContentLoaded', initAuth);
 </script>
 </body>
 </html>
