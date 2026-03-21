@@ -503,13 +503,27 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
       style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(66,133,244,.4);color:var(--white);padding:10px 12px;border-radius:3px;font-size:13px;margin-bottom:8px;font-family:monospace"
       oninput="saveApiKey(this.value)">
     <div id="apiKeyStatus" style="font-size:10px;color:var(--dim)">未入力</div>
-    <button onclick="showKeyQR()" class="btn btn-outline btn-sm btn-full" style="margin-top:10px">
-      📱 QRコードでスマホに転送
-    </button>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="showKeyQR()" class="btn btn-outline btn-sm" style="flex:1">
+        📱 QRコード
+      </button>
+      <button onclick="copySettingsCode()" class="btn btn-outline btn-sm" style="flex:1">
+        📋 設定コードをコピー
+      </button>
+    </div>
     <div id="keyQrArea" style="display:none;margin-top:12px;text-align:center">
       <div style="font-size:11px;color:var(--dim);margin-bottom:8px">スマホのカメラで読み取ってください</div>
       <img id="keyQrImg" style="width:180px;height:180px;border:2px solid var(--gold);border-radius:4px;background:#fff">
       <div style="font-size:10px;color:var(--dim);margin-top:6px">読み取ると自動でAPIキーが設定されます</div>
+    </div>
+    <!-- インポートエリア -->
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--dim);letter-spacing:.12em;margin-bottom:6px">📥 設定コードを貼り付けてインポート</div>
+      <div style="display:flex;gap:8px">
+        <input id="importCodeInput" placeholder="設定コードをここに貼り付け"
+          style="flex:1;background:var(--black-3);border:1px solid var(--border);color:var(--white);padding:8px 10px;border-radius:3px;font-size:11px;outline:none;font-family:monospace">
+        <button onclick="importSettingsCode()" class="btn btn-gold btn-sm">適用</button>
+      </div>
     </div>
   </div>
 
@@ -1323,6 +1337,39 @@ function showKeyQR() {
   area.style.display = area.style.display === 'none' ? 'block' : 'none';
 }
 
+function copySettingsCode() {
+  const key = getApiKey();
+  if (!key || key.length < 10) { showToast('先にAPIキーを入力してください'); return; }
+  const code = btoa(JSON.stringify({ key }));
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('✅ 設定コードをコピーしました');
+  }).catch(() => {
+    // clipboard API が使えない場合はテキストで表示
+    const inp = document.getElementById('importCodeInput');
+    if (inp) { inp.value = code; }
+    showToast('コードをコピーしてください: ' + code.slice(0,20) + '...');
+  });
+}
+
+function importSettingsCode() {
+  const raw = (document.getElementById('importCodeInput').value || '').trim();
+  if (!raw) { showToast('コードを貼り付けてください'); return; }
+  try {
+    const data = JSON.parse(atob(raw));
+    if (data.key && data.key.length > 10) {
+      try { localStorage.setItem('anthropic_key', data.key); } catch(e) {}
+      const inp = document.getElementById('anthropicKeyInput');
+      if (inp) { inp.value = data.key; saveApiKey(data.key); }
+      document.getElementById('importCodeInput').value = '';
+      showToast('✅ APIキーを設定しました！');
+    } else {
+      showToast('❌ コードが正しくありません');
+    }
+  } catch(e) {
+    showToast('❌ コードが正しくありません');
+  }
+}
+
 function checkUrlHash() {
   const hash = location.hash;
   if (hash.startsWith('#setkey=')) {
@@ -1380,6 +1427,16 @@ function updateDryRunBadge(){
 async function init(){
   // URLハッシュ経由のAPIキー受け取り
   checkUrlHash();
+
+  // ホーム画面アプリ起動時にAPIキー未設定なら設定タブへ誘導
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone && !getApiKey()) {
+    setTimeout(() => {
+      switchTab('settings');
+      showToast('⚙️ APIキーを設定タブで入力してください');
+    }, 800);
+  }
 
   // ローカルデータを読み込む
   loadLocal();
