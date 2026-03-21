@@ -430,6 +430,27 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 <!-- ══ 学習データ ══ -->
 <div class="section" id="tab-learn">
 
+  <!-- 参考アカウント管理 -->
+  <div class="card" style="border-color:rgba(124,58,237,.35)">
+    <div class="card-title" style="color:#c4b5fd">📱 参考アカウント（スタイル自動学習）</div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:14px;line-height:1.7">
+      登録したアカウントのスタイルを「✨ AI生成」に自動反映します。<br>
+      「🔍 AIスタイル分析」でアカウントの特徴をGeminiが自動分析します。
+    </div>
+    <div id="accountList"></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--dim);letter-spacing:.15em;margin-bottom:8px">アカウントを追加</div>
+      <input id="accHandle" placeholder="@ハンドル（例: mohumohuwan5）"
+        style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(124,58,237,.4);color:var(--white);padding:9px 12px;border-radius:3px;font-size:12px;margin-bottom:8px;outline:none">
+      <textarea id="accNote" rows="3" placeholder="このアカウントの特徴メモ（空欄でもAIが自動分析します）"
+        style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(124,58,237,.4);color:var(--white);padding:9px 12px;border-radius:3px;font-size:12px;resize:vertical;outline:none;font-family:inherit;margin-bottom:8px"></textarea>
+      <div style="display:flex;gap:8px">
+        <button onclick="addAccount()" class="btn btn-outline" style="flex:1;border-color:rgba(124,58,237,.5);color:#c4b5fd;font-size:11px">＋ 追加</button>
+        <button onclick="analyzeAndAddAccount()" class="btn" style="flex:2;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;font-size:11px;padding:9px 12px;border-radius:3px;cursor:pointer">🔍 AIスタイル分析して追加</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-title">📚 参考文章を学習させる</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:14px;line-height:1.6">
@@ -743,7 +764,7 @@ function switchTab(id) {
   // タブ別の初期化処理
   if (id === "history")   loadHistory();
   if (id === "dashboard") updateDashboard();
-  if (id === "learn")     loadSamples();
+  if (id === "learn")     { renderAccounts(); loadSamples(); }
 }
 
 // ════════════════════════════
@@ -1343,6 +1364,210 @@ async function init(){
 document.addEventListener('DOMContentLoaded',init);
 
 // ════════════════════════════
+// 参考アカウント管理
+// ════════════════════════════
+const DEFAULT_ACCOUNTS = [
+  {
+    id: 'acc_mohu',
+    handle: 'mohumohuwan5',
+    active: true,
+    style: `【@mohumohuwan5 のスタイル】
+■ 専門：まとめ仕入れ（複数本一括購入）特化
+■ 文体：フレンドリーで親しみやすい。読者を「一緒に考えよう」と巻き込むトーン
+■ 構成：①驚きの仕入れ結果を冒頭で提示 → ②まとめ買いの具体的な内訳（本数・単価・総額） → ③1本あたりの利益計算と結論
+■ 特徴的な表現：「まとめで〇本仕入れました」「1本あたり〇〇円」「これが物販の醍醐味」「ロット買い」
+■ 数字の見せ方：仕入れ総額・本数・1本単価・販売後の利益を全て開示する透明なスタイル
+■ まとめ仕入れのメリット強調：交渉で単価を下げる・ライバルが見逃す複数本まとめ出品を狙う
+■ 絵文字：🎯⌚📦💰✅を多用、テンション高め
+■ ハッシュタグ：#時計転売 #まとめ仕入れ #物販`
+  },
+  {
+    id: 'acc_onitsuka',
+    handle: 'TOKEI_ONITSUKA',
+    active: true,
+    style: `【@TOKEI_ONITSUKA のスタイル】
+■ 専門：時計転売の教育・ノウハウ発信（鬼塚式）
+■ 文体：ズバッと言い切るスタイル。断定的で信頼感がある。初心者に寄り添いながらも本質を突く
+■ 構成：①衝撃的な事実や問題提起 → ②「鬼塚が教える」具体的なノウハウ → ③行動を促す締め＋フォロー促進
+■ 特徴的な表現：「知らないと損」「これだけでOK」「仕入れの鉄則」「売れる時計の条件」「相場を制する者が物販を制する」
+■ 得意ジャンル：SEIKOなど国産メーカーの型番・相場・状態確認ポイント。ヤフオク落札テクニック
+■ 仕入れ・販売のチェックリスト形式の投稿が多い（①②③と番号をつける）
+■ 絵文字：⚠️🔥💡📌を多用、権威感を演出
+■ ハッシュタグ：#時計物販 #転売 #SEIKO #副業`
+  }
+];
+
+function loadAccounts() {
+  try {
+    const saved = localStorage.getItem('tokei_accounts');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return DEFAULT_ACCOUNTS.map(a => ({...a}));
+}
+
+function saveAccounts(accounts) {
+  try { localStorage.setItem('tokei_accounts', JSON.stringify(accounts)); } catch(e) {}
+}
+
+function renderAccounts() {
+  const accounts = loadAccounts();
+  const el = document.getElementById('accountList');
+  if (!el) return;
+  if (!accounts.length) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--dim);font-size:12px">登録なし</div>';
+    return;
+  }
+  el.innerHTML = accounts.map(a => `
+    <div style="background:var(--black-3);border:1px solid ${a.active?'rgba(124,58,237,.4)':'var(--border)'};border-radius:3px;padding:11px 13px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:700;color:${a.active?'#c4b5fd':'var(--dim)'}">@${a.handle}</span>
+          ${a.active?'<span style="font-size:9px;background:rgba(124,58,237,.2);color:#c4b5fd;padding:2px 6px;border-radius:2px">学習中</span>':''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="toggleAccount('${a.id}')"
+            style="background:none;border:1px solid rgba(124,58,237,.4);color:${a.active?'#c4b5fd':'var(--dim)'};font-size:10px;padding:3px 8px;border-radius:2px;cursor:pointer">
+            ${a.active?'ON':'OFF'}
+          </button>
+          <button onclick="reanalyzeAccount('${a.id}')"
+            style="background:none;border:1px solid rgba(201,168,76,.3);color:var(--gold);font-size:10px;padding:3px 8px;border-radius:2px;cursor:pointer">
+            🔍再分析
+          </button>
+          <button onclick="deleteAccount('${a.id}')"
+            style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:0">✕</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--dim);line-height:1.6;white-space:pre-wrap;max-height:80px;overflow-y:auto">${(a.style||'').substring(0,180)}${(a.style||'').length>180?'…':''}</div>
+    </div>
+  `).join('');
+}
+
+function toggleAccount(id) {
+  const accounts = loadAccounts();
+  const a = accounts.find(x => x.id === id);
+  if (a) { a.active = !a.active; saveAccounts(accounts); renderAccounts(); }
+}
+
+function deleteAccount(id) {
+  const accounts = loadAccounts().filter(x => x.id !== id);
+  saveAccounts(accounts);
+  renderAccounts();
+  showToast('削除しました');
+}
+
+function addAccount() {
+  const handle = (document.getElementById('accHandle').value || '').trim().replace(/^@/,'');
+  const note   = (document.getElementById('accNote').value || '').trim();
+  if (!handle) { showToast('@ハンドルを入力してください'); return; }
+  const accounts = loadAccounts();
+  if (accounts.find(a => a.handle === handle)) { showToast('既に登録済みです'); return; }
+  accounts.push({ id: 'acc_' + Date.now(), handle, active: true, style: note || `@${handle} のスタイルを参考にした時計物販投稿` });
+  saveAccounts(accounts);
+  renderAccounts();
+  document.getElementById('accHandle').value = '';
+  document.getElementById('accNote').value = '';
+  showToast(`@${handle} を追加しました`);
+}
+
+async function analyzeAndAddAccount() {
+  const handle = (document.getElementById('accHandle').value || '').trim().replace(/^@/,'');
+  if (!handle) { showToast('@ハンドルを入力してください'); return; }
+  const apiKey = getApiKey();
+  if (!apiKey || apiKey.length < 10) { showToast('❌ 設定タブでGemini APIキーを入力してください'); return; }
+
+  const btn = document.querySelector('[onclick="analyzeAndAddAccount()"]');
+  if (btn) { btn.textContent = '⏳ 分析中...'; btn.disabled = true; }
+
+  try {
+    const prompt = `Xアカウント @${handle} は時計転売・時計物販を発信するアカウントです。
+このような日本の時計転売系Xアカウントの典型的な投稿スタイルを分析し、
+以下の形式でスタイルガイドを作成してください。
+
+【@${handle} のスタイル】
+■ 専門：（このアカウントが得意とするテーマ）
+■ 文体：（トーン・言い回しの特徴）
+■ 構成：（スレッドの流れ・何を最初に見せるか）
+■ 特徴的な表現：（よく使うフレーズや言い回し）
+■ 数字の見せ方：（価格・利益の提示方法）
+■ 絵文字：（よく使う絵文字と使いどころ）
+■ ハッシュタグ：（使うハッシュタグ）
+
+※ユーザーのメモ: ${document.getElementById('accNote').value || 'なし'}
+
+必ず上記の形式で、日本語で回答してください。JSONではなくプレーンテキストで。`;
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.7,maxOutputTokens:1024} }) }
+    );
+    const data = await res.json();
+    const style = data.candidates?.[0]?.content?.parts?.[0]?.text || `@${handle} の時計物販スタイル`;
+
+    const accounts = loadAccounts();
+    if (accounts.find(a => a.handle === handle)) {
+      showToast('既に登録済みです（🔍再分析ボタンで更新できます）'); return;
+    }
+    accounts.push({ id: 'acc_' + Date.now(), handle, active: true, style });
+    saveAccounts(accounts);
+    renderAccounts();
+    document.getElementById('accHandle').value = '';
+    document.getElementById('accNote').value = '';
+    showToast(`✅ @${handle} のスタイルを分析して登録しました`);
+  } catch(e) {
+    showToast('❌ 分析に失敗しました: ' + e.message);
+  } finally {
+    if (btn) { btn.textContent = '🔍 AIスタイル分析して追加'; btn.disabled = false; }
+  }
+}
+
+async function reanalyzeAccount(id) {
+  const accounts = loadAccounts();
+  const a = accounts.find(x => x.id === id);
+  if (!a) return;
+  const apiKey = getApiKey();
+  if (!apiKey || apiKey.length < 10) { showToast('❌ Gemini APIキーが必要です'); return; }
+
+  showToast(`⏳ @${a.handle} を再分析中...`);
+  try {
+    const prompt = `Xアカウント @${a.handle} は時計転売・時計物販を発信するアカウントです。
+このアカウントの投稿スタイルを以下の形式で分析してください。
+
+【@${a.handle} のスタイル】
+■ 専門：
+■ 文体：
+■ 構成：
+■ 特徴的な表現：
+■ 数字の見せ方：
+■ 絵文字：
+■ ハッシュタグ：
+
+日本語でプレーンテキストで回答してください。`;
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature:0.7,maxOutputTokens:1024} }) }
+    );
+    const data = await res.json();
+    const style = data.candidates?.[0]?.content?.parts?.[0]?.text || a.style;
+    a.style = style;
+    saveAccounts(accounts);
+    renderAccounts();
+    showToast(`✅ @${a.handle} のスタイルを更新しました`);
+  } catch(e) {
+    showToast('❌ 再分析失敗: ' + e.message);
+  }
+}
+
+function getAccountStyleBlock() {
+  const accounts = loadAccounts().filter(a => a.active && a.style);
+  if (!accounts.length) return '';
+  return '\n## 参考アカウントのスタイル（これらのアカウントの文体・構成・表現を強く意識して書く）\n'
+    + accounts.map(a => a.style).join('\n\n---\n\n') + '\n';
+}
+
+// ════════════════════════════
 // 学習データ管理
 // ════════════════════════════
 async function loadSamples() {
@@ -1442,18 +1667,22 @@ async function generateAI() {
       random:    '時計物販に関する有益な投稿。種類は自由。',
     };
 
+    // 参考アカウントのスタイルを取得
+    const accountStyleBlock = getAccountStyleBlock();
+
     // 学習済み参考文章を取得
     let sampleBlock = '';
     try {
       const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
       const samples = (stored.samples || []).slice(-5);
       if (samples.length) {
-        sampleBlock = '\n## 参考にする文体（このトーン・長さ・絵文字の使い方を完全に真似してください）\n'
+        sampleBlock = '\n## 実際の参考投稿文（このトーン・長さ・絵文字を真似してください）\n'
           + samples.map((s,i) => `【参考${i+1}: ${s.label}】\n${s.text}`).join('\n\n---\n\n') + '\n';
       }
     } catch(e) {}
 
     const prompt = `あなたは時計物販の専門家として、Xに投稿するスレッド形式の文章を作成してください。
+${accountStyleBlock}
 ${sampleBlock}
 
 ## 投稿の種類
