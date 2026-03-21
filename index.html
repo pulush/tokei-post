@@ -503,6 +503,14 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
       style="width:100%;box-sizing:border-box;background:var(--black-3);border:1px solid rgba(66,133,244,.4);color:var(--white);padding:10px 12px;border-radius:3px;font-size:13px;margin-bottom:8px;font-family:monospace"
       oninput="saveApiKey(this.value)">
     <div id="apiKeyStatus" style="font-size:10px;color:var(--dim)">未入力</div>
+    <button onclick="showKeyQR()" class="btn btn-outline btn-sm btn-full" style="margin-top:10px">
+      📱 QRコードでスマホに転送
+    </button>
+    <div id="keyQrArea" style="display:none;margin-top:12px;text-align:center">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:8px">スマホのカメラで読み取ってください</div>
+      <img id="keyQrImg" style="width:180px;height:180px;border:2px solid var(--gold);border-radius:4px;background:#fff">
+      <div style="font-size:10px;color:var(--dim);margin-top:6px">読み取ると自動でAPIキーが設定されます</div>
+    </div>
   </div>
 
   <div class="card">
@@ -1302,6 +1310,35 @@ function showToast(msg){
 }
 
 // ════════════════════════════
+// QRコード転送（APIキー）
+// ════════════════════════════
+function showKeyQR() {
+  const key = getApiKey();
+  if (!key || key.length < 10) { showToast('先にAPIキーを入力してください'); return; }
+  const url = location.origin + location.pathname + '#setkey=' + encodeURIComponent(key);
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(url);
+  const area = document.getElementById('keyQrArea');
+  const img  = document.getElementById('keyQrImg');
+  img.src = qrUrl;
+  area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+
+function checkUrlHash() {
+  const hash = location.hash;
+  if (hash.startsWith('#setkey=')) {
+    const key = decodeURIComponent(hash.slice(8));
+    if (key && key.length > 10) {
+      try { localStorage.setItem('anthropic_key', key); } catch(e) {}
+      history.replaceState(null, '', location.pathname);
+      showToast('✅ APIキーを受け取りました！');
+      const inp = document.getElementById('anthropicKeyInput');
+      if (inp) { inp.value = key; saveApiKey(key); }
+      switchTab('settings');
+    }
+  }
+}
+
+// ════════════════════════════
 // LOCAL STORAGE 永続化
 // ════════════════════════════
 function saveLocal(){
@@ -1341,6 +1378,9 @@ function updateDryRunBadge(){
 // INIT
 // ════════════════════════════
 async function init(){
+  // URLハッシュ経由のAPIキー受け取り
+  checkUrlHash();
+
   // ローカルデータを読み込む
   loadLocal();
 
