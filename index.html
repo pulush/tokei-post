@@ -1611,8 +1611,42 @@ async function autoFetchAndRegister(id) {
     const posts = await fetchAccountPosts(a.handle);
 
     if (!posts.length) {
-      showToast('❌ 投稿を取得できませんでした');
+      showToast(`❌ @${a.handle} の投稿を取得できませんでした\n非公開アカウントか、Xの埋め込みAPI非対応の可能性があります。\n「参考文章を学習させる」カードから手動でコピペしてください。`);
       return;
+    }
+
+    // APIキーがあればAIでオリジナル化してから保存
+    const apiKey = getApiKey();
+    let samplesToSave = posts;
+    let label = `@${a.handle}`;
+
+    if (apiKey && apiKey.length > 10) {
+      if (btn) { btn.textContent = '✨ オリジナル化中...'; }
+      showToast(`✨ @${a.handle} の投稿をAIでオリジナル化中...`);
+
+      try {
+        const rewritePrompt = `あなたは時計物販の専門家です。以下は参考アカウント @${a.handle} の投稿例です。これらを読んで、同じジャンル・テーマ・構成スタイルを参考にしながら、完全に独自の新しい投稿文を5件作成してください。
+
+【重要ルール】
+- 元の文章を一切コピー・引用しないこと
+- 同じテーマ・情報を扱いながら、自分の言葉で全て書き直す
+- 文体・絵文字の使い方・構成の雰囲気はスタイル参考にしてよい
+- 各投稿は100〜280文字程度
+- あくまで「自分が考えた独自投稿」として書くこと
+
+## 参考投稿（スタイル参考のみ）
+${posts.slice(0, 5).map((p, i) => `${i+1}. ${p}`).join('\n\n')}
+
+## 出力形式（JSONのみ、他のテキスト不要）
+{"tweets": ["1件目のオリジナル投稿", "2件目", "3件目", "4件目", "5件目"]}`;
+
+        samplesToSave = await callGemini(apiKey, rewritePrompt);
+        label = `AIリライト@${a.handle}`;
+      } catch(e) {
+        // リライト失敗時は元の投稿を保存（警告付き）
+        label = `@${a.handle}（要確認）`;
+        showToast(`⚠️ AIオリジナル化に失敗（${e.message}）\n元の投稿をそのまま登録します`);
+      }
     }
 
     // 既存のサンプルと重複しないものだけ追加
@@ -1620,11 +1654,11 @@ async function autoFetchAndRegister(id) {
     const existing = (stored.samples || []).map(s => s.text);
     let added = 0;
 
-    posts.forEach(text => {
+    samplesToSave.forEach(text => {
       if (!existing.includes(text)) {
         stored.samples.push({
           id: Date.now() + Math.random(),
-          label: `@${a.handle}`,
+          label,
           text,
           added_at: new Date().toLocaleDateString('ja-JP'),
         });
@@ -1633,7 +1667,7 @@ async function autoFetchAndRegister(id) {
     });
 
     localStorage.setItem('style_samples', JSON.stringify(stored));
-    showToast(`✅ @${a.handle} から ${added}件の投稿を学習データに登録しました`);
+    showToast(`✅ ${label} から ${added}件を学習データに登録しました`);
     loadSamples();
   } catch(e) {
     showToast('❌ ' + e.message);
@@ -1904,7 +1938,7 @@ async function generateAI() {
       const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
       const samples = (stored.samples || []).slice(-5);
       if (samples.length) {
-        sampleBlock = '\n## 実際の参考投稿文（このトーン・長さ・絵文字を真似してください）\n'
+        sampleBlock = '\n## 参考投稿のスタイル（トーン・長さ・絵文字の雰囲気を参考に。内容はコピー禁止。必ず独自の内容で書くこと）\n'
           + samples.map((s,i) => `【参考${i+1}: ${s.label}】\n${s.text}`).join('\n\n---\n\n') + '\n';
       }
     } catch(e) {}
