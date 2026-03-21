@@ -1511,6 +1511,104 @@ function saveAccounts(accounts) {
   try { localStorage.setItem('tokei_accounts', JSON.stringify(accounts)); } catch(e) {}
 }
 
+async function fetchAccountPosts(handle) {
+  // X syndication API（公開エンドポイント）から最新投稿を取得
+  const url = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${handle}`;
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const html = await res.text();
+
+    // DOMParserでHTMLを解析してツイートテキストを抽出
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const texts = [];
+
+    // 方法①：JSON-LDからテキスト抽出
+    doc.querySelectorAll('script[type="application/json"]').forEach(s => {
+      try {
+        const data = JSON.parse(s.textContent);
+        const extract = (obj) => {
+          if (!obj || typeof obj !== 'object') return;
+          if (obj.full_text) texts.push(obj.full_text);
+          if (obj.text && typeof obj.text === 'string' && obj.text.length > 20) texts.push(obj.text);
+          Object.values(obj).forEach(v => { if (typeof v === 'object') extract(v); });
+        };
+        extract(data);
+      } catch(e) {}
+    });
+
+    // 方法②：class名でテキスト要素を探す
+    const selectors = [
+      '.timeline-Tweet-text',
+      '[data-tweet-id]',
+      '.TweetTextSize',
+      'p[lang="ja"]',
+      'article',
+    ];
+    selectors.forEach(sel => {
+      doc.querySelectorAll(sel).forEach(el => {
+        const t = el.innerText || el.textContent || '';
+        if (t.length > 20) texts.push(t.trim());
+      });
+    });
+
+    // 重複除去＆短すぎるものを除外
+    const unique = [...new Set(texts)]
+      .filter(t => t.length > 15 && !t.startsWith('http'))
+      .slice(0, 20);
+
+    return unique;
+  } catch(e) {
+    throw new Error('取得失敗: ' + e.message);
+  }
+}
+
+async function autoFetchAndRegister(id) {
+  const accounts = loadAccounts();
+  const a = accounts.find(x => x.id === id);
+  if (!a) return;
+
+  const btn = document.querySelector(`[onclick="autoFetchAndRegister('${id}')"]`);
+  if (btn) { btn.textContent = '⏳ 取得中...'; btn.disabled = true; }
+  showToast(`⏳ @${a.handle} の投稿を取得中...`);
+
+  try {
+    const posts = await fetchAccountPosts(a.handle);
+
+    if (!posts.length) {
+      showToast('❌ 投稿を取得できませんでした');
+      return;
+    }
+
+    // 既存のサンプルと重複しないものだけ追加
+    const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
+    const existing = (stored.samples || []).map(s => s.text);
+    let added = 0;
+
+    posts.forEach(text => {
+      if (!existing.includes(text)) {
+        stored.samples.push({
+          id: Date.now() + Math.random(),
+          label: `@${a.handle}`,
+          text,
+          added_at: new Date().toLocaleDateString('ja-JP'),
+        });
+        added++;
+      }
+    });
+
+    localStorage.setItem('style_samples', JSON.stringify(stored));
+    showToast(`✅ @${a.handle} から ${added}件の投稿を学習データに登録しました`);
+    loadSamples();
+  } catch(e) {
+    showToast('❌ ' + e.message);
+  } finally {
+    if (btn) { btn.textContent = '⬇ 投稿を取得'; btn.disabled = false; }
+  }
+}
+
 function renderAccounts() {
   const accounts = loadAccounts();
   const el = document.getElementById('accountList');
@@ -1530,6 +1628,10 @@ function renderAccounts() {
           <button onclick="toggleAccount('${a.id}')"
             style="background:none;border:1px solid rgba(124,58,237,.4);color:${a.active?'#c4b5fd':'var(--dim)'};font-size:10px;padding:3px 8px;border-radius:2px;cursor:pointer">
             ${a.active?'ON':'OFF'}
+          </button>
+          <button onclick="autoFetchAndRegister('${a.id}')"
+            style="background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.4);color:#2ecc71;font-size:10px;padding:3px 8px;border-radius:2px;cursor:pointer">
+            ⬇ 投稿を取得
           </button>
           <button onclick="reanalyzeAccount('${a.id}')"
             style="background:none;border:1px solid rgba(201,168,76,.3);color:var(--gold);font-size:10px;padding:3px 8px;border-radius:2px;cursor:pointer">
@@ -1674,11 +1776,9 @@ function getAccountStyleBlock() {
 // ════════════════════════════
 async function loadSamples() {
   try {
-    const data = await apiFetch('/samples');
-    renderSamples(data.samples || []);
-  } catch(e) {
-    // オフライン時は無視
-  }
+    const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
+    renderSamples(stored.samples || []);
+  } catch(e) {}
 }
 
 function renderSamples(samples) {
@@ -1705,28 +1805,21 @@ async function addSample() {
   const text = document.getElementById('sampleText').value.trim();
   const label = document.getElementById('sampleLabel').value.trim() || '参考';
   if (!text) { showToast('文章を入力してください'); return; }
-  try {
-    const res = await apiFetch('/samples', {
-      method: 'POST',
-      body: JSON.stringify({ text, label })
-    });
-    document.getElementById('sampleText').value = '';
-    document.getElementById('sampleLabel').value = '';
-    showToast(`✅ 登録しました（合計${res.count}件）`);
-    loadSamples();
-  } catch(e) {
-    showToast('❌ 登録に失敗しました');
-  }
+  const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
+  stored.samples.push({ id: Date.now(), label, text, added_at: new Date().toLocaleDateString('ja-JP') });
+  localStorage.setItem('style_samples', JSON.stringify(stored));
+  document.getElementById('sampleText').value = '';
+  document.getElementById('sampleLabel').value = '';
+  showToast(`✅ 登録しました（合計${stored.samples.length}件）`);
+  loadSamples();
 }
 
 async function deleteSample(id) {
-  try {
-    await apiFetch(`/samples/${id}`, { method: 'DELETE' });
-    showToast('🗑 削除しました');
-    loadSamples();
-  } catch(e) {
-    showToast('❌ 削除に失敗しました');
-  }
+  const stored = JSON.parse(localStorage.getItem('style_samples') || '{"samples":[]}');
+  stored.samples = stored.samples.filter(s => String(s.id) !== String(id));
+  localStorage.setItem('style_samples', JSON.stringify(stored));
+  showToast('🗑 削除しました');
+  loadSamples();
 }
 
 // ════════════════════════════
