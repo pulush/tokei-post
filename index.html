@@ -1512,16 +1512,33 @@ function saveAccounts(accounts) {
 }
 
 async function fetchAccountPosts(handle) {
-  // X syndication API（公開エンドポイント）から最新投稿を取得
-  const url = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${handle}`;
+  // CORSプロキシ経由でX syndication APIにアクセス
+  const target = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${handle}`;
+  const proxies = [
+    `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`,
+    `https://corsproxy.io/?${encodeURIComponent(target)}`,
+  ];
+
+  let html = '';
+  let lastErr = '';
+  for (const proxyUrl of proxies) {
+    try {
+      const res = await fetch(proxyUrl);
+      if (!res.ok) { lastErr = `HTTP ${res.status}`; continue; }
+      const data = await res.json().catch(() => null);
+      // allorigins は { contents: "..." } 形式
+      html = data?.contents ?? await (await fetch(proxyUrl)).text();
+      if (html && html.length > 100) break;
+    } catch(e) { lastErr = e.message; }
+  }
+  if (!html) throw new Error('取得失敗: ' + lastErr);
+
   try {
-    const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const html = await res.text();
 
     // DOMParserでHTMLを解析してツイートテキストを抽出
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
+
 
     const texts = [];
 
