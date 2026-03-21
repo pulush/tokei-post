@@ -765,6 +765,11 @@ function switchTab(id) {
   if (id === "history")   loadHistory();
   if (id === "dashboard") updateDashboard();
   if (id === "learn")     { renderAccounts(); loadSamples(); }
+  if (id === "settings")  {
+    const k = getApiKey();
+    const inp = document.getElementById('anthropicKeyInput');
+    if (k && inp) { inp.value = k; saveApiKey(k); }
+  }
 }
 
 // ════════════════════════════
