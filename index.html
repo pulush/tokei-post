@@ -13,6 +13,8 @@
   --white: #f0ede6;
   --dim: #6b6560;
   --green: #27ae60;
+  --blue: #3498db;
+  --purple: #a29bfe;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -20,7 +22,7 @@ body {
   color: var(--white);
   font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
   min-height: 100vh;
-  padding-bottom: 40px;
+  padding-bottom: 60px;
 }
 
 /* ── ヘッダー ── */
@@ -37,6 +39,43 @@ header {
 }
 .logo { font-size: 15px; font-weight: 700; color: var(--gold); letter-spacing: .05em; }
 .date-label { font-size: 11px; color: var(--dim); }
+
+/* ── タブナビ ── */
+.tab-nav {
+  display: flex;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 53px;
+  z-index: 9;
+}
+.tab-btn {
+  flex: 1;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .2s, border-color .2s;
+  letter-spacing: .03em;
+}
+.tab-btn.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+.tab-btn:hover:not(.active) { color: var(--white); }
+.tab-btn .learn-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-left: 4px;
+  vertical-align: middle;
+  margin-top: -2px;
+}
 
 /* ── メイン ── */
 main { padding: 16px; max-width: 560px; margin: 0 auto; }
@@ -74,6 +113,21 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
   font-size: 13px;
   cursor: pointer;
 }
+
+/* ── 学習済みバナー ── */
+.learned-banner {
+  background: rgba(39,174,96,.08);
+  border: 1px solid rgba(39,174,96,.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 11px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.learned-banner .lb-date { color: var(--dim); margin-left: auto; font-size: 10px; }
 
 /* ── 全件生成ボタン ── */
 .gen-all-btn {
@@ -139,6 +193,7 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
 
 .char-count { font-size: 10px; color: var(--dim); text-align: right; margin-top: -8px; margin-bottom: 10px; }
 .char-count.over { color: #e74c3c; }
+.char-count.low { color: #e67e22; }
 
 .card-actions { display: flex; gap: 8px; }
 .btn-regen {
@@ -185,6 +240,133 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
 }
 .settings-link:hover { color: var(--white); }
 
+/* ── 学習タブ ── */
+.learn-user-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.learn-user-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.learn-user-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(201,168,76,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.learn-user-name { font-size: 13px; font-weight: 700; color: var(--white); }
+.learn-user-handle { font-size: 11px; color: var(--dim); margin-top: 1px; }
+.learn-post-count {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--dim);
+  background: rgba(255,255,255,.05);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.learn-textarea {
+  width: 100%;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--white);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+  resize: vertical;
+  min-height: 140px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s;
+}
+.learn-textarea:focus { border-color: rgba(201,168,76,.4); }
+.learn-textarea::placeholder { color: var(--dim); font-size: 11px; }
+
+.analyze-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 18px;
+  letter-spacing: .05em;
+  transition: opacity .2s;
+}
+.analyze-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 分析結果カード */
+.result-card {
+  background: var(--card);
+  border: 1px solid rgba(162,155,254,.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: none;
+}
+.result-card.show { display: block; }
+.result-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.result-badge {
+  font-size: 10px;
+  background: rgba(39,174,96,.2);
+  color: var(--green);
+  border: 1px solid rgba(39,174,96,.4);
+  border-radius: 20px;
+  padding: 3px 8px;
+}
+.result-date { font-size: 10px; color: var(--dim); margin-left: auto; }
+.result-title { font-size: 13px; font-weight: 700; }
+.result-body {
+  font-size: 12px;
+  line-height: 1.9;
+  color: rgba(240,237,230,.8);
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: rgba(0,0,0,.25);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+.result-clear {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--dim);
+  cursor: pointer;
+  text-align: right;
+}
+.result-clear:hover { color: #e74c3c; }
+
+.learn-hint {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.8;
+  text-align: center;
+  padding: 8px 0 20px;
+}
+.learn-hint strong { color: rgba(240,237,230,.4); display: block; margin-bottom: 4px; }
+
 /* ── トースト ── */
 .toast {
   position: fixed;
@@ -213,6 +395,14 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
   <div class="date-label" id="dateLabel"></div>
 </header>
 
+<!-- タブナビ -->
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabBtn-post" onclick="switchTab('post')">📝 投稿</button>
+  <button class="tab-btn" id="tabBtn-learn" onclick="switchTab('learn')">🎓 学習</button>
+</div>
+
+<!-- ═══ 投稿タブ ═══ -->
+<div id="tab-post">
 <main>
 
   <!-- APIキー未設定バナー -->
@@ -222,6 +412,12 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
     <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></p>
     <input type="password" class="api-input" id="apiKeyInput" placeholder="AIza...">
     <button class="save-btn" onclick="saveApiKey()">保存する</button>
+  </div>
+
+  <!-- 学習済みバナー -->
+  <div class="learned-banner" id="learnedBanner" style="display:none">
+    ✅ 文体スタイルを学習済みです。生成に自動適用されます。
+    <span class="lb-date" id="learnedAt"></span>
   </div>
 
   <!-- 全件生成 -->
@@ -292,6 +488,75 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
   <div class="settings-link" onclick="showSettings()">⚙️ APIキーを変更する</div>
 
 </main>
+</div><!-- /tab-post -->
+
+<!-- ═══ 学習タブ ═══ -->
+<div id="tab-learn" style="display:none">
+<main>
+
+  <!-- ユーザー1 -->
+  <div class="learn-user-card">
+    <div class="learn-user-header">
+      <div class="learn-user-avatar">⌚</div>
+      <div>
+        <div class="learn-user-name">鬼塚さん</div>
+        <div class="learn-user-handle">@TOKEI_ONITSUKA</div>
+      </div>
+      <div class="learn-post-count" id="count-user1">0行</div>
+    </div>
+    <textarea
+      class="learn-textarea"
+      id="user1-textarea"
+      placeholder="@TOKEI_ONITSUKA の投稿をここにコピペしてください。&#10;複数投稿はそのまま改行区切りでOKです。&#10;&#10;例：&#10;ロレックスの仕入れで失敗しない方法をまとめました。&#10;サブマリーナ 国内定価45万→相場68万..."
+      oninput="updatePostCount('user1')"
+    ></textarea>
+  </div>
+
+  <!-- ユーザー2 -->
+  <div class="learn-user-card">
+    <div class="learn-user-header">
+      <div class="learn-user-avatar">🕐</div>
+      <div>
+        <div class="learn-user-name">もふもふさん</div>
+        <div class="learn-user-handle">@mohumohuwan5</div>
+      </div>
+      <div class="learn-post-count" id="count-user2">0行</div>
+    </div>
+    <textarea
+      class="learn-textarea"
+      id="user2-textarea"
+      placeholder="@mohumohuwan5 の投稿をここにコピペしてください。&#10;複数投稿はそのまま改行区切りでOKです。&#10;&#10;例：&#10;今日の仕入れ報告📦&#10;パネライ ルミノール ¥180,000→¥240,000..."
+      oninput="updatePostCount('user2')"
+    ></textarea>
+  </div>
+
+  <!-- 分析ボタン -->
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyzeStyle()">
+    🔍 文体を分析して学習する
+  </button>
+
+  <!-- 分析結果 -->
+  <div class="result-card" id="resultCard">
+    <div class="result-card-header">
+      <div class="result-title">📊 学習済みスタイルガイド</div>
+      <span class="result-badge">✅ 学習済み</span>
+      <span class="result-date" id="resultDate"></span>
+    </div>
+    <div class="result-body" id="resultBody"></div>
+    <div class="result-clear" onclick="clearLearnedStyle()">🗑 学習データを削除する</div>
+  </div>
+
+  <p class="learn-hint">
+    <strong>使い方</strong>
+    XでプロフィールページをSafariの「テキストコピー」などで<br>
+    投稿文を取得してペーストしてください。<br>
+    分析後は「投稿タブ」の生成に自動で反映されます。
+  </p>
+
+  <div class="settings-link" onclick="showSettings()">⚙️ APIキーを変更する</div>
+
+</main>
+</div><!-- /tab-learn -->
 
 <div class="toast" id="toast"></div>
 
@@ -319,10 +584,10 @@ const SLOTS = {
 
 const BASE_STYLE = `【投稿スタイルのルール】
 ・時計転売・物販のノウハウや情報を発信する専門アカウントとして書く
-・ズバッと言い切るスタイル。断定的で読者に信頼感を与える
+・「です」「ます」口調で丁寧に書く（断定的な言い切りは使わない）
 ・⌚💰🔥📌⚠️✅などの絵文字を2〜3個使う
 ・#時計物販 #副業 などのハッシュタグを最後に1〜2個入れる
-・140文字以内に収める（短くてもOK、絶対に140文字を超えないこと）
+・必ず100文字以上140文字以内に収める（100文字未満は絶対NG）
 ・説明文や前置きは不要。投稿文だけ出力すること`;
 
 // ── 状態 ──────────────────────────────
@@ -332,18 +597,15 @@ let postedToday = {};
 
 // ── 初期化 ──────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  // 日付表示
   document.getElementById('dateLabel').textContent =
     new Date().toLocaleDateString('ja-JP', { month:'long', day:'numeric', weekday:'short' });
 
-  // APIキー確認
   const key = getApiKey();
   if (!key) {
     document.getElementById('apiBanner').style.display = 'block';
     document.getElementById('genAllBtn').disabled = true;
   }
 
-  // 今日のデータ復元
   const saved = JSON.parse(localStorage.getItem('posts_' + today) || '{}');
   postedToday = JSON.parse(localStorage.getItem('posted_' + today) || '{}');
   for (const slot of Object.keys(SLOTS)) {
@@ -355,7 +617,20 @@ window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('badge-' + slot).classList.add('show');
     }
   }
+
+  restoreLearnData();
+  updateLearnedBanner();
+  updateLearnTabDot();
 });
+
+// ── タブ切り替え ──────────────────────────────
+function switchTab(tab) {
+  ['post', 'learn'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
+    document.getElementById('tabBtn-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'learn') restoreLearnData();
+}
 
 // ── APIキー ──────────────────────────────
 function getApiKey() {
@@ -372,6 +647,7 @@ function saveApiKey() {
 }
 
 function showSettings() {
+  switchTab('post');
   const banner = document.getElementById('apiBanner');
   banner.style.display = 'block';
   const k = getApiKey();
@@ -406,10 +682,8 @@ async function callGemini(prompt) {
       const data = await res.json();
       if (!res.ok) {
         const msg = data?.error?.message || `APIエラー ${res.status}`;
-        // モデルが使えない場合は次を試す
         if (msg.includes('not found') || msg.includes('no longer available') || msg.includes('not supported')) {
-          lastErr = msg;
-          continue;
+          lastErr = msg; continue;
         }
         throw new Error(msg);
       }
@@ -418,8 +692,7 @@ async function callGemini(prompt) {
       return text.trim();
     } catch(e) {
       if (e.message.includes('not found') || e.message.includes('no longer available') || e.message.includes('not supported')) {
-        lastErr = e.message;
-        continue;
+        lastErr = e.message; continue;
       }
       throw e;
     }
@@ -438,9 +711,14 @@ function applyPost(slot, text) {
 
   const len = text.length;
   countEl.textContent = `${len} / 140文字`;
-  countEl.className = 'char-count' + (len > 140 ? ' over' : '');
+  if (len > 140) {
+    countEl.className = 'char-count over';
+  } else if (len < 100) {
+    countEl.className = 'char-count low';
+  } else {
+    countEl.className = 'char-count';
+  }
 
-  // Xのintent URLにセット（投稿ボタン有効化）
   btn.href = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
   btn.classList.remove('disabled');
 }
@@ -462,7 +740,8 @@ async function generateOne(slot) {
   postBtn.classList.add('disabled');
 
   try {
-    const prompt = `${SLOTS[slot].prompt}\n\n${BASE_STYLE}`;
+    const learnedSection = getLearnedStyleSection();
+    const prompt = `${SLOTS[slot].prompt}\n\n${BASE_STYLE}${learnedSection}`;
     const text = await callGemini(prompt);
     posts[slot] = text;
     applyPost(slot, text);
@@ -476,6 +755,13 @@ async function generateOne(slot) {
   }
 }
 
+// 学習済みスタイルをプロンプト用テキストに変換
+function getLearnedStyleSection() {
+  const data = JSON.parse(localStorage.getItem('learned_style') || '{}');
+  if (!data.styleGuide) return '';
+  return `\n\n【学習済み文体スタイルガイド（最優先で適用）】\n${data.styleGuide}`;
+}
+
 // ── 全件生成 ──────────────────────────────
 async function generateAll() {
   const key = getApiKey();
@@ -486,7 +772,6 @@ async function generateAll() {
   btn.textContent = '⏳ 生成中...';
 
   try {
-    // 3件を並列生成（速い）
     await Promise.all(Object.keys(SLOTS).map(slot => generateOne(slot)));
     showToast('✅ 朝・昼・晩の投稿を生成しました！');
   } catch(e) {
@@ -508,6 +793,126 @@ function markPosted(slot) {
 // ── 保存 ──────────────────────────────
 function savePosts() {
   localStorage.setItem('posts_' + today, JSON.stringify(posts));
+}
+
+// ── 学習機能 ──────────────────────────────
+
+function updatePostCount(userId) {
+  const ta = document.getElementById(userId + '-textarea');
+  const lines = ta.value.trim() ? ta.value.trim().split('\n').filter(l => l.trim()).length : 0;
+  document.getElementById('count-' + userId).textContent = lines + '行';
+  saveLearnInputs();
+}
+
+function saveLearnInputs() {
+  localStorage.setItem('learn_input_user1', document.getElementById('user1-textarea').value);
+  localStorage.setItem('learn_input_user2', document.getElementById('user2-textarea').value);
+}
+
+function restoreLearnData() {
+  const u1 = localStorage.getItem('learn_input_user1') || '';
+  const u2 = localStorage.getItem('learn_input_user2') || '';
+  const ta1 = document.getElementById('user1-textarea');
+  const ta2 = document.getElementById('user2-textarea');
+  if (ta1.value !== u1) ta1.value = u1;
+  if (ta2.value !== u2) ta2.value = u2;
+  updatePostCount('user1');
+  updatePostCount('user2');
+
+  const data = JSON.parse(localStorage.getItem('learned_style') || '{}');
+  if (data.styleGuide) {
+    document.getElementById('resultBody').textContent = data.styleGuide;
+    document.getElementById('resultDate').textContent = data.analyzedAt || '';
+    document.getElementById('resultCard').classList.add('show');
+  }
+}
+
+async function analyzeStyle() {
+  const key = getApiKey();
+  if (!key) { showToast('APIキーを設定してください'); switchTab('post'); showSettings(); return; }
+
+  const u1 = document.getElementById('user1-textarea').value.trim();
+  const u2 = document.getElementById('user2-textarea').value.trim();
+  if (!u1 && !u2) { showToast('⚠️ 少なくとも1人の投稿を入力してください'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 分析中...';
+
+  const parts = [];
+  if (u1) parts.push(`【ユーザー1: @TOKEI_ONITSUKA の投稿サンプル】\n${u1}`);
+  if (u2) parts.push(`【ユーザー2: @mohumohuwan5 の投稿サンプル】\n${u2}`);
+
+  const analyzePrompt = `以下は時計転売・物販アカウントの実際のX（Twitter）投稿サンプルです。
+
+${parts.join('\n\n')}
+
+---
+上記の投稿を詳しく分析して、「このアカウントらしい文体スタイルガイド」を作成してください。
+
+分析する観点：
+・口調・語尾のパターン（です・ます調か、タメ口か、など）
+・よく使うフレーズや言い回し・特徴的な表現
+・絵文字の使い方・頻度・種類・配置場所
+・投稿の構成パターン（冒頭の入り方→本文→締めくくり）
+・数字・具体例・ブランド名の使い方
+・読者への話しかけ方・エンゲージメントの誘い方
+
+最後に「投稿生成に使うスタイルルール」を箇条書き7〜10項目でまとめてください。
+前置き・説明・見出しは不要です。箇条書きのスタイルルールのみ出力してください。`;
+
+  try {
+    const styleGuide = await callGemini(analyzePrompt);
+    const analyzedAt = new Date().toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    localStorage.setItem('learned_style', JSON.stringify({ styleGuide, analyzedAt }));
+
+    document.getElementById('resultBody').textContent = styleGuide;
+    document.getElementById('resultDate').textContent = analyzedAt;
+    document.getElementById('resultCard').classList.add('show');
+    updateLearnedBanner();
+    updateLearnTabDot();
+    showToast('✅ 学習完了！次回の生成から反映されます');
+  } catch(e) {
+    showToast('❌ 分析失敗: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 文体を分析して学習する';
+  }
+}
+
+function clearLearnedStyle() {
+  if (!confirm('学習済みスタイルデータを削除しますか？')) return;
+  localStorage.removeItem('learned_style');
+  document.getElementById('resultCard').classList.remove('show');
+  document.getElementById('resultBody').textContent = '';
+  updateLearnedBanner();
+  updateLearnTabDot();
+  showToast('🗑 学習データを削除しました');
+}
+
+function updateLearnedBanner() {
+  const data = JSON.parse(localStorage.getItem('learned_style') || '{}');
+  const banner = document.getElementById('learnedBanner');
+  if (data.styleGuide) {
+    banner.style.display = 'flex';
+    document.getElementById('learnedAt').textContent = data.analyzedAt || '';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function updateLearnTabDot() {
+  const data = JSON.parse(localStorage.getItem('learned_style') || '{}');
+  const btn = document.getElementById('tabBtn-learn');
+  const existing = btn.querySelector('.learn-dot');
+  if (data.styleGuide && !existing) {
+    const dot = document.createElement('span');
+    dot.className = 'learn-dot';
+    btn.appendChild(dot);
+  } else if (!data.styleGuide && existing) {
+    existing.remove();
+  }
 }
 
 // ── トースト ──────────────────────────────
