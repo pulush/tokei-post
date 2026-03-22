@@ -565,35 +565,30 @@ main { padding: 16px; max-width: 560px; margin: 0 auto; }
 const SLOTS = {
   morning: {
     label: '朝',
-    prompt: `朝（7〜9時）に投稿する、時計転売・物販の「教育・ノウハウ」系ツイートを1件作成してください。
-読者が「今日も頑張ろう」と思えるモチベーション系・気づき系の内容が理想です。
-具体的な仕入れのコツ、目利きのポイント、マインドセットなどを扱ってください。`
+    prompt: `朝の時計転売・物販アカウントのX投稿を1件、日本語で書いてください。
+仕入れのコツ・目利きポイント・マインドセットなどノウハウ系の内容にしてください。`
   },
   noon: {
     label: '昼',
-    prompt: `昼（12〜13時）に投稿する、時計転売・物販の「実例・相場」系ツイートを1件作成してください。
-実際の仕入れ事例（ブランド・購入価格・売値・利益など具体的な数字を含む）や、
-今注目の時計モデルの相場情報などを扱ってください。`
+    prompt: `昼の時計転売・物販アカウントのX投稿を1件、日本語で書いてください。
+仕入れ事例（ブランド・仕入れ値・売値・利益など具体的な数字）か相場情報を含む内容にしてください。`
   },
   evening: {
     label: '晩',
-    prompt: `夜（20〜22時）に投稿する、時計転売・物販の「問いかけ・振り返り」系ツイートを1件作成してください。
-フォロワーにコメントや反応を促す問いかけ、または今日の活動の振り返りや気づきを発信する内容が理想です。`
+    prompt: `夜の時計転売・物販アカウントのX投稿を1件、日本語で書いてください。
+フォロワーへの問いかけ、または今日の振り返り・気づきを発信する内容にしてください。`
   }
 };
 
 const MIN_LEN = 100;
+const MAX_LEN = 140;
 
-const BASE_STYLE = `【絶対ルール・最優先】
-⚠️ 投稿文は必ず100文字以上140文字以内にすること。100文字未満は失敗とみなす。
-⚠️ 文字数を確認してから出力すること。短すぎる場合は内容を足して100文字以上にする。
-
-【投稿スタイルのルール】
-・時計転売・物販のノウハウや情報を発信する専門アカウントとして書く
-・「です」「ます」口調で丁寧に書く（断定的な言い切りは使わない）
-・⌚💰🔥📌⚠️✅などの絵文字を2〜3個使う
-・#時計物販 #副業 などのハッシュタグを最後に1〜2個入れる
-・説明文や前置きは不要。投稿文だけ出力すること`;
+const BASE_STYLE = `【ルール】
+・「です」「ます」口調で書く
+・⌚💰🔥📌⚠️✅など絵文字を2〜3個使う
+・最後に #時計物販 などハッシュタグを1〜2個入れる
+・全体を100文字以上130文字以内に収めること（ハッシュタグ含む）
+・投稿文のテキストのみ出力すること（前置き・説明不要）`;
 
 // ── 状態 ──────────────────────────────
 const today = new Date().toLocaleDateString('ja-JP');
@@ -662,10 +657,10 @@ function showSettings() {
 
 // ── Gemini呼び出し ──────────────────────────────
 const GEMINI_MODELS = [
+  'gemini-2.5-flash-lite',
   'gemini-2.5-flash',
-  'gemini-2.5-flash-preview-04-17',
-  'gemini-2.0-flash-lite',
-  'gemini-1.5-flash-latest',
+  'gemini-flash-latest',
+  'gemini-flash-lite-latest',
 ];
 
 async function callGemini(prompt) {
@@ -680,7 +675,7 @@ async function callGemini(prompt) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.95, maxOutputTokens: 512 }
+            generationConfig: { temperature: 0.95, maxOutputTokens: 2048 }
           })
         }
       );
@@ -749,15 +744,18 @@ async function generateOne(slot) {
     const prompt = `${SLOTS[slot].prompt}\n\n${BASE_STYLE}${learnedSection}`;
     let text = await callGemini(prompt);
 
-    // 100文字未満なら最大2回まで拡張リトライ
-    for (let retry = 0; retry < 2 && text.length < MIN_LEN; retry++) {
-      const expandPrompt = `以下のX（Twitter）投稿文を、内容を豊かにして100文字以上140文字以内に拡張してください。
-「です」「ます」口調を維持し、絵文字とハッシュタグも残してください。
-投稿文だけを出力してください。
+    // 100文字未満 or 140文字超えなら最大2回リトライ
+    for (let retry = 0; retry < 2 && (text.length < MIN_LEN || text.length > MAX_LEN); retry++) {
+      const issue = text.length < MIN_LEN
+        ? `現在${text.length}文字で短すぎます。内容を豊かにして100〜130文字に増やしてください。`
+        : `現在${text.length}文字で長すぎます。内容を削って100〜130文字に収めてください。`;
+      const fixPrompt = `以下のX投稿文を修正してください。${issue}
+「です」「ます」口調・絵文字2〜3個・ハッシュタグ1〜2個を維持してください。
+投稿文のテキストのみ出力してください。
 
 【元の投稿文】
 ${text}`;
-      text = await callGemini(expandPrompt);
+      text = await callGemini(fixPrompt);
     }
 
     posts[slot] = text;
