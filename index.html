@@ -582,12 +582,17 @@ const SLOTS = {
   }
 };
 
-const BASE_STYLE = `【投稿スタイルのルール】
+const MIN_LEN = 100;
+
+const BASE_STYLE = `【絶対ルール・最優先】
+⚠️ 投稿文は必ず100文字以上140文字以内にすること。100文字未満は失敗とみなす。
+⚠️ 文字数を確認してから出力すること。短すぎる場合は内容を足して100文字以上にする。
+
+【投稿スタイルのルール】
 ・時計転売・物販のノウハウや情報を発信する専門アカウントとして書く
 ・「です」「ます」口調で丁寧に書く（断定的な言い切りは使わない）
 ・⌚💰🔥📌⚠️✅などの絵文字を2〜3個使う
 ・#時計物販 #副業 などのハッシュタグを最後に1〜2個入れる
-・必ず100文字以上140文字以内に収める（100文字未満は絶対NG）
 ・説明文や前置きは不要。投稿文だけ出力すること`;
 
 // ── 状態 ──────────────────────────────
@@ -742,7 +747,19 @@ async function generateOne(slot) {
   try {
     const learnedSection = getLearnedStyleSection();
     const prompt = `${SLOTS[slot].prompt}\n\n${BASE_STYLE}${learnedSection}`;
-    const text = await callGemini(prompt);
+    let text = await callGemini(prompt);
+
+    // 100文字未満なら最大2回まで拡張リトライ
+    for (let retry = 0; retry < 2 && text.length < MIN_LEN; retry++) {
+      const expandPrompt = `以下のX（Twitter）投稿文を、内容を豊かにして100文字以上140文字以内に拡張してください。
+「です」「ます」口調を維持し、絵文字とハッシュタグも残してください。
+投稿文だけを出力してください。
+
+【元の投稿文】
+${text}`;
+      text = await callGemini(expandPrompt);
+    }
+
     posts[slot] = text;
     applyPost(slot, text);
     savePosts();
